@@ -641,7 +641,7 @@ async function startApp() {
     });
   }
 
-  const PORT = 8080;
+  const PORT = process.env.PORT || 8080;
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Meme Battle Database-Polling REST API server listening on http://0.0.0.0:${PORT}`);
   });
