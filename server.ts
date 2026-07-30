@@ -136,6 +136,7 @@ function startRoundCreationPhase(room: Room) {
   room.state = 'MEME_CREATION';
   room.roundStartTime = Date.now();
   room.phaseStartTime = Date.now();
+  room.lastActivity = Date.now();
   saveDatabase();
 }
 
@@ -181,12 +182,14 @@ function startShowcaseVotingPhase(room: Room) {
   room.currentShowcaseIndex = 0;
   room.showcaseStartTime = Date.now();
   room.phaseStartTime = Date.now();
+  room.lastActivity = Date.now();
   saveDatabase();
 }
 
 // Advance showcase index to next meme
 function advanceShowcase(room: Room) {
   room.currentShowcaseIndex++;
+  room.lastActivity = Date.now();
   const submissionList = getOrderedSubmissions(room);
 
   if (room.currentShowcaseIndex >= submissionList.length) {
@@ -245,12 +248,24 @@ function calculateRoundResults(room: Room) {
 
   room.state = 'ROUND_RESULTS';
   room.phaseStartTime = Date.now();
+  room.lastActivity = Date.now();
   saveDatabase();
 }
 
-// Global background ticker (runs every second to progress room state)
+// Global background ticker (runs every second to progress room state and auto-close rooms after 5 minutes without input)
 setInterval(() => {
+  const now = Date.now();
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
   Object.values(rooms).forEach(room => {
+    const lastActive = room.lastActivity || room.phaseStartTime || room.roundStartTime || 0;
+    if (lastActive > 0 && (now - lastActive >= FIVE_MINUTES_MS)) {
+      console.log(`[Room Timeout] Closing room ${room.code} due to 5 minutes of inactivity (no input).`);
+      delete rooms[room.code];
+      saveDatabase();
+      return;
+    }
+
     updateRoomTimeouts(room);
   });
 }, 1000);
@@ -295,6 +310,8 @@ app.post('/api/rooms/create', (req, res) => {
       roundStartTime: null,
       currentShowcaseIndex: 0,
       showcaseStartTime: null,
+      phaseStartTime: Date.now(),
+      lastActivity: Date.now(),
       roundScores: {}
     };
 
@@ -323,6 +340,7 @@ app.post('/api/rooms/join', (req, res) => {
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found. Check code & try again.' });
     }
+    room.lastActivity = Date.now();
 
     // Check if player name exists to handle reconnection
     const existingPlayer = Object.values(room.players).find(
@@ -380,6 +398,7 @@ app.get('/api/rooms/:code/poll', (req, res) => {
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
+    room.lastActivity = Date.now();
 
     // Update heartbeats
     if (playerId && room.players[playerId]) {
@@ -422,6 +441,7 @@ app.post('/api/rooms/:code/settings', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
     if (room.hostId !== playerId) return res.status(403).json({ success: false, message: 'Only host can update settings' });
 
     room.settings = settings;
@@ -441,6 +461,7 @@ app.post('/api/rooms/:code/start', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
     if (room.hostId !== playerId) return res.status(403).json({ success: false, message: 'Only host can start game' });
 
     room.currentRound = 1;
@@ -464,6 +485,7 @@ app.post('/api/rooms/:code/submit-meme', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
     if (room.state !== 'MEME_CREATION') return res.status(400).json({ success: false, message: 'Not in creation state' });
 
     const player = room.players[playerId];
@@ -505,6 +527,7 @@ app.post('/api/rooms/:code/vote', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
     if (room.state !== 'SHOWCASE_VOTING') return res.status(400).json({ success: false, message: 'Not in voting state' });
 
     const sub = room.submissions[submissionId];
@@ -544,6 +567,7 @@ app.post('/api/rooms/:code/next-round', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
     if (room.hostId !== playerId) return res.status(403).json({ success: false, message: 'Only host can start next round' });
 
     if (room.currentRound < room.settings.totalRounds) {
@@ -570,6 +594,7 @@ app.post('/api/rooms/:code/restart', (req, res) => {
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+    room.lastActivity = Date.now();
 
     room.state = 'LOBBY';
     room.phaseStartTime = Date.now();
@@ -593,6 +618,10 @@ app.post('/api/rooms/:code/leave', (req, res) => {
     const { code } = req.params;
     const { playerId } = req.body;
     const room = rooms[code];
+
+    if (room) {
+      room.lastActivity = Date.now();
+    }
 
     if (room && room.players[playerId]) {
       room.players[playerId].isConnected = false;
@@ -647,7 +676,7 @@ async function startApp() {
     });
   }
 
-  const PORT = 8080;
+  const PORT = 3000;
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Meme Battle Database-Polling REST API server listening on http://0.0.0.0:${PORT}`);
   });

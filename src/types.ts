@@ -73,6 +73,7 @@ export interface Room {
   currentShowcaseIndex: number;
   showcaseStartTime: number | null;
   phaseStartTime?: number | null;
+  lastActivity?: number;
   roundScores: Record<number, Record<string, number>>; // round -> playerId -> pointsEarnedThisRound
   submissionOrder?: string[]; // randomized submission IDs for showcase voting phase
 }

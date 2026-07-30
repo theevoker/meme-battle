@@ -94,7 +94,15 @@ export default function App() {
       }
     } catch (err: any) {
       console.warn('[Poll Error]:', err.message);
-      setIsConnected(false);
+      if (err.message && err.message.includes('Room not found')) {
+        setRoom(null);
+        setMyPlayerId(null);
+        localStorage.removeItem('meme_battle_room_code');
+        localStorage.removeItem('meme_battle_player_id');
+        showError('Room was closed due to 5 minutes of inactivity.');
+      } else {
+        setIsConnected(false);
+      }
     }
   }, [room?.code, myPlayerId]);
 
