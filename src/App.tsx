@@ -35,10 +35,26 @@ export default function App() {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Phase transition loading state
-  const [isPhaseLoading, setIsPhaseLoading] = useState(false);
-  const [phaseLoadingState, setPhaseLoadingState] = useState<GameState>('LOBBY');
-  const prevRoomRef = useRef<{ state: GameState; round: number } | null>(null);
+  // Current timestamp tick to keep time-dependent phase loading derived state fresh
+  const [now, setNow] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Synchronously derived phase transition loading state (prevents UI flashing next screen before loading screen)
+  const PHASE_LOADING_DURATION = 2400;
+  const elapsedPhaseTime = room?.phaseStartTime ? now - room.phaseStartTime : Infinity;
+  const isPhaseLoading = Boolean(
+    room &&
+    room.state !== 'LOBBY' &&
+    room.phaseStartTime &&
+    elapsedPhaseTime < PHASE_LOADING_DURATION &&
+    elapsedPhaseTime > -10000
+  );
 
   // Timers
   const [roundTimeLeft, setRoundTimeLeft] = useState<number>(45);
@@ -48,31 +64,6 @@ export default function App() {
     // Set html dir attribute for Hebrew RTL support
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
   }, [lang]);
-
-  // Monitor room state transitions to trigger synchronized phase loading screens for all players
-  useEffect(() => {
-    if (!room) {
-      setIsPhaseLoading(false);
-      return;
-    }
-
-    const checkPhaseLoading = () => {
-      const LOADING_DURATION = 2500;
-      if (room.phaseStartTime) {
-        const elapsed = Date.now() - room.phaseStartTime;
-        if (elapsed >= 0 && elapsed < LOADING_DURATION) {
-          setPhaseLoadingState(room.state);
-          setIsPhaseLoading(true);
-          return;
-        }
-      }
-      setIsPhaseLoading(false);
-    };
-
-    checkPhaseLoading();
-    const interval = setInterval(checkPhaseLoading, 200);
-    return () => clearInterval(interval);
-  }, [room?.phaseStartTime, room?.state, room?.currentRound]);
 
   // Helper to show error toast
   const showError = (msg: string) => {
@@ -300,10 +291,11 @@ export default function App() {
           />
         ) : isPhaseLoading ? (
           <PhaseLoadingView
-            toState={phaseLoadingState}
+            toState={room.state}
             currentRound={room.currentRound}
             totalRounds={room.settings.totalRounds}
             roomCode={room.code}
+            phaseStartTime={room.phaseStartTime}
             t={t}
           />
         ) : room.state === 'LOBBY' ? (

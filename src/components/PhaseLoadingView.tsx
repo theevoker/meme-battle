@@ -9,6 +9,7 @@ interface PhaseLoadingViewProps {
   totalRounds: number;
   roomCode: string;
   t: Translations;
+  phaseStartTime?: number;
 }
 
 export const PhaseLoadingView: React.FC<PhaseLoadingViewProps> = ({
@@ -16,23 +17,27 @@ export const PhaseLoadingView: React.FC<PhaseLoadingViewProps> = ({
   currentRound,
   totalRounds,
   roomCode,
-  t
+  t,
+  phaseStartTime
 }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const startTime = Date.now();
+    const startTime = phaseStartTime || Date.now();
     const duration = 2400; // 2.4 seconds
 
-    const interval = setInterval(() => {
+    const updateProgress = () => {
       const elapsed = Date.now() - startTime;
-      const pct = Math.min(100, (elapsed / duration) * 100);
+      const pct = Math.min(100, Math.max(0, (elapsed / duration) * 100));
       setProgress(pct);
       if (pct >= 100) clearInterval(interval);
-    }, 30);
+    };
+
+    updateProgress();
+    const interval = setInterval(updateProgress, 30);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [phaseStartTime]);
 
   // Determine title, subtitle, icon, and colors based on target phase
   let title = t.phaseLoadingStarting;

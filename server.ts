@@ -642,6 +642,13 @@ app.post('/api/rooms/:code/leave', (req, res) => {
   }
 });
 
+// Serve meme_templates folder statically with CORS enabled
+app.use('/meme_templates', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'meme _templates')));
+
 // Error handling middleware for oversized payloads
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err && (err.type === 'entity.too.large' || err.status === 413)) {

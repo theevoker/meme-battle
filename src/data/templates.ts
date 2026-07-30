@@ -1,229 +1,174 @@
 import { MemeTemplate } from '../types';
 
-// Helper to generate vector SVG data URLs for classic meme templates so they load flawlessly without external dependencies
-function generateMemeSvg(name: string, bgGradient: string, accentContent: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
-    <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        ${bgGradient}
-      </linearGradient>
-      <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-        <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.5"/>
-      </filter>
-    </defs>
-    <rect width="600" height="600" fill="url(#bg)"/>
-    <g filter="url(#shadow)">
-      ${accentContent}
-    </g>
-    <rect width="600" height="600" fill="none" stroke="#38BDF8" stroke-width="4" opacity="0.3"/>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
 export const CLASSIC_MEME_TEMPLATES: MemeTemplate[] = [
   {
-    id: 'drake-hotline',
-    name: 'Drake Hotline Bling',
-    url: generateMemeSvg(
-      'Drake Hotline Bling',
-      '<stop offset="0%" stop-color="#1E1B4B"/><stop offset="100%" stop-color="#312E81"/>',
-      `<!-- 2 Panels -->
-       <line x1="0" y1="300" x2="600" y2="300" stroke="#4F46E5" stroke-width="6"/>
-       <line x1="200" y1="0" x2="200" y2="600" stroke="#4F46E5" stroke-width="6"/>
-       <!-- Top Left: Dislike Drake -->
-       <g transform="translate(100, 150)">
-         <circle cx="0" cy="-30" r="40" fill="#F87171"/>
-         <path d="M-20,-30 Q0,-50 20,-30" stroke="#7F1D1D" stroke-width="6" fill="none"/>
-         <path d="M-20,-10 Q0,0 20,-10" stroke="#7F1D1D" stroke-width="6" fill="none"/>
-         <text x="0" y="50" font-family="sans-serif" font-weight="900" font-size="28" fill="#FCA5A5" text-anchor="middle">NAH ✋</text>
-       </g>
-       <!-- Bottom Left: Like Drake -->
-       <g transform="translate(100, 450)">
-         <circle cx="0" cy="-30" r="40" fill="#4ADE80"/>
-         <path d="M-20,-35 Q0,-20 20,-35" stroke="#14532D" stroke-width="6" fill="none"/>
-         <path d="M-20,-10 Q0,10 20,-10" stroke="#14532D" stroke-width="6" fill="none"/>
-         <text x="0" y="50" font-family="sans-serif" font-weight="900" font-size="28" fill="#86EFAC" text-anchor="middle">YEAH 👉</text>
-       </g>
-       <text x="400" y="160" font-family="sans-serif" font-weight="bold" font-size="20" fill="#A5B4FC" text-anchor="middle">[TOP REJECTED PANEL]</text>
-       <text x="400" y="460" font-family="sans-serif" font-weight="bold" font-size="20" fill="#A5B4FC" text-anchor="middle">[BOTTOM APPROVED PANEL]</text>`
-    )
+    "id": "folder-tpl-1",
+    "name": "Unsheathing the Sword",
+    "url": "/meme_templates/Unsheathing%20the%20Sword_%20Kamina_s%20Sword%20-%201%20-%20Gurren%20Lagann%2C%20Kamina%20-%20L_%C3%83%C2%A9p%C3%83%C2%A9e%20d%C3%83%C2%A9gain%C3%83%C2%A9e%20-%20L_%C3%83%C2%A9p%C3%83%C2%A9e%20de%20Kamina.jpg"
   },
   {
-    id: 'two-buttons',
-    name: 'Two Buttons Choice',
-    url: generateMemeSvg(
-      'Two Buttons',
-      '<stop offset="0%" stop-color="#0F172A"/><stop offset="100%" stop-color="#1E293B"/>',
-      `<!-- Machine with 2 Buttons -->
-       <rect x="50" y="80" width="500" height="240" rx="16" fill="#334155" stroke="#64748B" stroke-width="4"/>
-       <!-- Red Button 1 -->
-       <ellipse cx="180" cy="200" rx="70" ry="45" fill="#EF4444" stroke="#991B1B" stroke-width="4"/>
-       <text x="180" y="208" font-family="sans-serif" font-weight="bold" font-size="16" fill="#FFFFFF" text-anchor="middle">OPTION A</text>
-       <!-- Red Button 2 -->
-       <ellipse cx="420" cy="200" rx="70" ry="45" fill="#EF4444" stroke="#991B1B" stroke-width="4"/>
-       <text x="420" y="208" font-family="sans-serif" font-weight="bold" font-size="16" fill="#FFFFFF" text-anchor="middle">OPTION B</text>
-       <!-- Sweating guy in bottom half -->
-       <g transform="translate(300, 470)">
-         <circle cx="0" cy="0" r="70" fill="#FDE047"/>
-         <!-- Sweat drops -->
-         <path d="M-50,-20 Q-60,-10 -50,0 Q-40,-10 -50,-20" fill="#38BDF8"/>
-         <path d="M50,-30 Q40,-20 50,-10 Q60,-20 50,-30" fill="#38BDF8"/>
-         <!-- Worried face -->
-         <circle cx="-25" cy="-15" r="8" fill="#1E293B"/>
-         <circle cx="25" cy="-15" r="8" fill="#1E293B"/>
-         <path d="M-30,25 Q0,5 30,25" stroke="#1E293B" stroke-width="6" fill="none"/>
-       </g>`
-    )
+    "id": "folder-tpl-2",
+    "name": "Unsheathing the Sword",
+    "url": "/meme_templates/Unsheathing%20the%20Sword_%20Kamina_s%20Sword%20-%204%20-%20Elongated_Longer%20Sword%2C%20Gurren%20Lagann%2C%20Kamina%20-%20L_%C3%83%C2%A9p%C3%83%C2%A9e%20d%C3%83%C2%A9gain%C3%83%C2%A9e%20-%20L_%C3%83%C2%A9p%C3%83%C2%A9e%20de%20Kamina.jpg"
   },
   {
-    id: 'distracted-bf',
-    name: 'Distracted Boyfriend',
-    url: generateMemeSvg(
-      'Distracted Boyfriend',
-      '<stop offset="0%" stop-color="#0284C7"/><stop offset="100%" stop-color="#0F172A"/>',
-      `<!-- 3 Characters -->
-       <!-- Girlfriend (Angry Left) -->
-       <g transform="translate(120, 320)">
-         <circle cx="0" cy="-60" r="45" fill="#F472B6"/>
-         <text x="0" y="-120" font-family="sans-serif" font-weight="bold" font-size="18" fill="#FBCFE8" text-anchor="middle">CURRENT THING</text>
-         <!-- Angry Eyes -->
-         <path d="M-20,-70 L-5,-60" stroke="#881337" stroke-width="5"/>
-         <path d="M20,-70 L5,-60" stroke="#881337" stroke-width="5"/>
-         <circle cx="-15" cy="-55" r="5" fill="#881337"/>
-         <circle cx="15" cy="-55" r="5" fill="#881337"/>
-         <path d="M-20,-35 Q0,-50 20,-35" stroke="#881337" stroke-width="5" fill="none"/>
-       </g>
-
-       <!-- Boyfriend (Middle Turning Head) -->
-       <g transform="translate(300, 320)">
-         <circle cx="0" cy="-60" r="50" fill="#60A5FA"/>
-         <text x="0" y="-130" font-family="sans-serif" font-weight="bold" font-size="20" fill="#BFDBFE" text-anchor="middle">ME / YOU</text>
-         <!-- Looking right with heart eyes -->
-         <text x="15" y="-55" font-size="28">😍</text>
-       </g>
-
-       <!-- New Girl (Right Walking By) -->
-       <g transform="translate(480, 320)">
-         <circle cx="0" cy="-60" r="45" fill="#A7F3D0"/>
-         <text x="0" y="-120" font-family="sans-serif" font-weight="bold" font-size="18" fill="#D1FAE5" text-anchor="middle">NEW TEMPTATION</text>
-         <circle cx="-15" cy="-60" r="6" fill="#065F46"/>
-         <circle cx="15" cy="-60" r="6" fill="#065F46"/>
-         <path d="M-20,-40 Q0,-25 20,-40" stroke="#065F46" stroke-width="5" fill="none"/>
-       </g>
-       <!-- Direction Arrow -->
-       <path d="M250,260 Q380,220 420,260" stroke="#F43F5E" stroke-width="6" stroke-dasharray="8 8" fill="none"/>
-       <polygon points="430,265 410,250 415,275" fill="#F43F5E"/>`
-    )
+    "id": "folder-tpl-3",
+    "name": "Slavery With Extra Steps",
+    "url": "/meme_templates/Well%20that%20Sounds%20Like%20Slavery%20With%20Extra%20Steps%20-%20Rick%20Sanchez%2C%20Morty%20Smith%2C%20Zeep%20Xanflorp%2C%20Rick%20and%20Morty.jpg"
   },
   {
-    id: 'expanding-brain',
-    name: 'Expanding Brain',
-    url: generateMemeSvg(
-      'Expanding Brain',
-      '<stop offset="0%" stop-color="#18181B"/><stop offset="100%" stop-color="#27272A"/>',
-      `<!-- 4 Tiers -->
-       <line x1="0" y1="150" x2="600" y2="150" stroke="#52525B" stroke-width="3"/>
-       <line x1="0" y1="300" x2="600" y2="300" stroke="#52525B" stroke-width="3"/>
-       <line x1="0" y1="450" x2="600" y2="450" stroke="#52525B" stroke-width="3"/>
-       <line x1="300" y1="0" x2="300" y2="600" stroke="#52525B" stroke-width="3"/>
-
-       <!-- Brain 1: Small -->
-       <g transform="translate(450, 75)"><circle cx="0" cy="0" r="30" fill="#71717A"/><text x="0" y="8" font-size="24" text-anchor="middle">🧠</text></g>
-       <!-- Brain 2: Glowing -->
-       <g transform="translate(450, 225)"><circle cx="0" cy="0" r="35" fill="#38BDF8"/><text x="0" y="8" font-size="30" text-anchor="middle">⚡</text></g>
-       <!-- Brain 3: Radiant -->
-       <g transform="translate(450, 375)"><circle cx="0" cy="0" r="40" fill="#818CF8"/><text x="0" y="10" font-size="36" text-anchor="middle">✨</text></g>
-       <!-- Brain 4: Cosmic -->
-       <g transform="translate(450, 525)"><circle cx="0" cy="0" r="45" fill="#F43F5E"/><text x="0" y="12" font-size="42" text-anchor="middle">🌌</text></g>
-
-       <text x="150" y="80" font-family="sans-serif" font-weight="bold" font-size="16" fill="#A1A1AA" text-anchor="middle">TIER 1 (Basic)</text>
-       <text x="150" y="230" font-family="sans-serif" font-weight="bold" font-size="16" fill="#A1A1AA" text-anchor="middle">TIER 2 (Smart)</text>
-       <text x="150" y="380" font-family="sans-serif" font-weight="bold" font-size="16" fill="#A1A1AA" text-anchor="middle">TIER 3 (Galaxy)</text>
-       <text x="150" y="530" font-family="sans-serif" font-weight="bold" font-size="16" fill="#A1A1AA" text-anchor="middle">TIER 4 (Multiverse)</text>`
-    )
+    "id": "folder-tpl-4",
+    "name": "Blep Cat",
+    "url": "/meme_templates/When%20X%20vs%20When%20X%20Template%20-%20Blep%20Cat%20-%20Tongue%20Sticking%20Out%20-%20Chat%20Cat%20Langue%202.jpg"
   },
   {
-    id: 'change-my-mind',
-    name: 'Change My Mind',
-    url: generateMemeSvg(
-      'Change My Mind',
-      '<stop offset="0%" stop-color="#1E293B"/><stop offset="100%" stop-color="#0F172A"/>',
-      `<!-- Table & Mug -->
-       <rect x="80" y="280" width="440" height="160" rx="8" fill="#B45309" stroke="#78350F" stroke-width="4"/>
-       <!-- White Banner on Table -->
-       <rect x="120" y="310" width="360" height="100" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
-       <text x="300" y="355" font-family="sans-serif" font-weight="900" font-size="22" fill="#0F172A" text-anchor="middle">[HOT TAKE HERE]</text>
-       <text x="300" y="385" font-family="sans-serif" font-weight="bold" font-size="16" fill="#DC2626" text-anchor="middle">CHANGE MY MIND.</text>
-       <!-- Guy Sitting Behind -->
-       <g transform="translate(300, 200)">
-         <circle cx="0" cy="0" r="45" fill="#FDE047"/>
-         <circle cx="-15" cy="-10" r="5" fill="#1E293B"/>
-         <circle cx="15" cy="-10" r="5" fill="#1E293B"/>
-         <path d="M-20,15 Q0,25 20,15" stroke="#1E293B" stroke-width="4" fill="none"/>
-         <!-- Mug in hand -->
-         <rect x="60" y="40" width="25" height="35" rx="3" fill="#E2E8F0"/>
-       </g>`
-    )
+    "id": "folder-tpl-5",
+    "name": "Where All Money Went",
+    "url": "/meme_templates/When%20Your%20Parents%20Ask%20Where%20All%20Your%20Money%20Went%20-%20Zac%20Efron%2C%20High%20School%20Musical%202.jpg"
   },
   {
-    id: 'doge-meme',
-    name: 'Doge Classic',
-    url: generateMemeSvg(
-      'Doge',
-      '<stop offset="0%" stop-color="#FEF08A"/><stop offset="100%" stop-color="#CA8A04"/>',
-      `<!-- Doge Face in Center -->
-       <g transform="translate(300, 300)">
-         <ellipse cx="0" cy="0" rx="140" ry="120" fill="#EAB308"/>
-         <ellipse cx="0" cy="30" rx="70" ry="50" fill="#FEF08A"/>
-         <!-- Nose -->
-         <ellipse cx="0" cy="10" rx="16" ry="12" fill="#1E293B"/>
-         <!-- Big Eyebrows & Eyes -->
-         <circle cx="-50" cy="-30" r="16" fill="#FFFFFF"/>
-         <circle cx="-45" cy="-30" r="8" fill="#1E293B"/>
-         <circle cx="50" cy="-30" r="16" fill="#FFFFFF"/>
-         <circle cx="55" cy="-30" r="8" fill="#1E293B"/>
-         <!-- Smile -->
-         <path d="M-30,40 Q0,65 30,40" stroke="#854D0E" stroke-width="6" fill="none"/>
-       </g>
-       <!-- Floating comic sans hints -->
-       <text x="80" y="100" font-family="Comic Sans MS, cursive" font-weight="bold" font-size="24" fill="#E11D48">much wow</text>
-       <text x="450" y="120" font-family="Comic Sans MS, cursive" font-weight="bold" font-size="24" fill="#0284C7">very meme</text>
-       <text x="90" y="480" font-family="Comic Sans MS, cursive" font-weight="bold" font-size="24" fill="#16A34A">so battle</text>
-       <text x="420" y="500" font-family="Comic Sans MS, cursive" font-weight="bold" font-size="24" fill="#9333EA">such win</text>`
-    )
+    "id": "folder-tpl-6",
+    "name": "Will Smith Slap",
+    "url": "/meme_templates/Will%20smith%20slap%20v1.JPG"
   },
   {
-    id: 'woman-cat',
-    name: 'Woman Yelling at Cat',
-    url: generateMemeSvg(
-      'Woman Yelling at Cat',
-      '<stop offset="0%" stop-color="#312E81"/><stop offset="100%" stop-color="#0F172A"/>',
-      `<!-- 2 Split Panels -->
-       <line x1="300" y1="0" x2="300" y2="600" stroke="#6366F1" stroke-width="6"/>
-       <!-- Left: Angry Woman -->
-       <g transform="translate(150, 300)">
-         <circle cx="0" cy="-40" r="55" fill="#EC4899"/>
-         <text x="0" y="-110" font-family="sans-serif" font-weight="900" font-size="20" fill="#FBCFE8" text-anchor="middle">ANGRY ACCUSER</text>
-         <!-- Pointing finger -->
-         <path d="M40,0 L110,-20" stroke="#F472B6" stroke-width="12" stroke-linecap="round"/>
-         <!-- Screaming Face -->
-         <circle cx="-20" cy="-50" r="8" fill="#831843"/>
-         <circle cx="20" cy="-50" r="8" fill="#831843"/>
-         <ellipse cx="0" cy="-20" rx="20" ry="25" fill="#831843"/>
-       </g>
-       <!-- Right: Confused Cat at Dinner Table -->
-       <g transform="translate(450, 300)">
-         <rect x="-100" y="50" width="200" height="20" fill="#94A3B8"/>
-         <!-- Salad Plate -->
-         <ellipse cx="0" cy="45" rx="50" ry="15" fill="#CBD5E1"/>
-         <!-- White Cat -->
-         <circle cx="0" cy="-40" r="50" fill="#FFFFFF"/>
-         <text x="0" y="-110" font-family="sans-serif" font-weight="900" font-size="20" fill="#E2E8F0" text-anchor="middle">CONFUSED CAT</text>
-         <!-- Smug eyes -->
-         <path d="M-25,-45 Q-15,-35 -5,-45" stroke="#1E293B" stroke-width="4" fill="none"/>
-         <path d="M5,-45 Q15,-35 25,-45" stroke="#1E293B" stroke-width="4" fill="none"/>
-         <path d="M-10,-25 Q0,-15 10,-25" stroke="#1E293B" stroke-width="3" fill="none"/>
-       </g>`
-    )
+    "id": "folder-tpl-7",
+    "name": "Winnie The Pooh Teeth",
+    "url": "/meme_templates/Winnie%20the%20pooh%20teeth.jpg"
+  },
+  {
+    "id": "folder-tpl-8",
+    "name": "Woman Scared of Breasts",
+    "url": "/meme_templates/Woman%20Scared%20of%20Breasts%20Template%20-%20Big%20Boobs%2C%20Window%2C%20Crying%20-%20gros%20seins%20nichons%20peur%20effray%C3%83%C2%A9%20crie.jpg"
+  },
+  {
+    "id": "folder-tpl-9",
+    "name": "Woman Yelling At A Cat",
+    "url": "/meme_templates/Woman%20Yelling%20At%20A%20Cat%20Empty%20Template%20-%20Smile%2C%20Smiling%20-%20femme%20chat-%202.jpg"
+  },
+  {
+    "id": "folder-tpl-10",
+    "name": "Dexter Good Burger",
+    "url": "/meme_templates/Wooo%20-%20Dexter%20Reed%2C%20Good%20Burger%2C%20Glowing%20Red%20Eyes%2C%20Lens%20Flare.jpg"
+  },
+  {
+    "id": "folder-tpl-11",
+    "name": "Write That Down!",
+    "url": "/meme_templates/Write%20That%20Down%2C%20Write%20That%20Down!%20-%20SpongeBob%20SquarePants%2C%20Patrick%20Star%2C%20Camp%20Fire.jpg"
+  },
+  {
+    "id": "folder-tpl-12",
+    "name": "Grab Em By The Wumbo",
+    "url": "/meme_templates/Wumbo%20-%20Grab%20_Em%20By%20The%20Wumbo%20-%20Patrick%20Fingers%20Spongebob%20-%20Bob%20et%20Patrick%20fist%20sexe%20cul%20doigts.jpg"
+  },
+  {
+    "id": "folder-tpl-13",
+    "name": "X Is Good But X Is Better",
+    "url": "/meme_templates/X%20Is%20Good%20But%20X%20Is%20Better%20-%20X%20vs%20X%20-%20Big%20Boobs%20vs%20Small%20Boobs%20Template%20-%20gros%20petits%20nichons%20seins.jpg"
+  },
+  {
+    "id": "folder-tpl-14",
+    "name": "Chads Kissing",
+    "url": "/meme_templates/Yes%20Chads%20Kissing%20Full%20Template%20-%20Yes%20Chad%20-%20Gatekeeping%20Yuri%20(Yaoi)%20-%20OreGel%20on%20Deviant%20Art-%20Embrasse%20Gay.jpg"
+  },
+  {
+    "id": "folder-tpl-15",
+    "name": "You Guys Are Getting Paid",
+    "url": "/meme_templates/You%20Guys%20Are%20Getting%20Paid_%20-%20Kenny%20Rossmore%2C%20We_re%20The%20Millers.jpg"
+  },
+  {
+    "id": "folder-tpl-16",
+    "name": "You Guys Are Getting Paid (Full)",
+    "url": "/meme_templates/You%20Guys%20Are%20Getting%20Paid_%20Full%20-%20David%20Clark%2C%20Rose%20O_Reilly%2C%20Casey%20Mathis%2C%20Kenny%20Rossmore%2C%20We_re%20The%20Millers.jpg"
+  },
+  {
+    "id": "folder-tpl-17",
+    "name": "You Took Everything From Me",
+    "url": "/meme_templates/You%20Took%20Everything%20From%20Me%20_%20I%20Don_t%20Even%20Know%20Who%20You%20Are%20Template%20-%20Avengers%20-%20Thanos%20-%20Blurry.jpg"
+  },
+  {
+    "id": "folder-tpl-18",
+    "name": "Youre Weak Im You",
+    "url": "/meme_templates/You_re%20Weak%20_%20I_m%20You%20Template%20-%20Avengers%20-%20Nebula.jpg"
+  },
+  {
+    "id": "folder-tpl-19",
+    "name": "Keep Your Secrets",
+    "url": "/meme_templates/_All%20Right%20Then%2C%20Keep%20Your%20Secrets_%20-%20Frodo%20Baggins%2C%20The%20Lord%20of%20the%20Rings_%20The%20Fellowship%20of%20the%20Ring%20-%20seigneur%20anneaux%20lor%20frodon.jpg"
+  },
+  {
+    "id": "folder-tpl-20",
+    "name": "Everyday We Stray Further",
+    "url": "/meme_templates/_Every%20day.%20We%20stray%20further%20from%20god._%20-%20Perry%20The%20Platypus%2C%20Phinneas%20and%20Ferb%2C%20Hat.jpg"
+  },
+  {
+    "id": "folder-tpl-21",
+    "name": "A Worthy Opponent!",
+    "url": "/meme_templates/_Finally!%20A%20Worthy%20Opponent!%20Our%20Battle%20Will%20Be%20Legendary!_%20-%20Tai%20Lung%20%2C%20Kung%20Fu%20Panda.jpg"
+  },
+  {
+    "id": "folder-tpl-22",
+    "name": "Good Question",
+    "url": "/meme_templates/_Good%20Question_%20-%20Shrek.jpg"
+  },
+  {
+    "id": "folder-tpl-23",
+    "name": "He Exists Now In Memory",
+    "url": "/meme_templates/_He%20exists%20now.%20Only%20in%20my%20memory_%20-%20Titanic%2C%20Rose%20DeWitt%20Bukater.jpg"
+  },
+  {
+    "id": "folder-tpl-24",
+    "name": "I Serve The Soviet Union",
+    "url": "/meme_templates/_I%20Serve%20the%20Soviet%20Union_%20-%20Chernobyl%2C%20HBO%2C%20General%20Tarakanov.jpg"
+  },
+  {
+    "id": "folder-tpl-25",
+    "name": "I Will Find You",
+    "url": "/meme_templates/_I%20will%20find%20you%20and%20I%20will%20kill%20you_%20Textless%20-%20Taken%2C%20Liam%20Neeson.jpg"
+  },
+  {
+    "id": "folder-tpl-26",
+    "name": "I Have Seen Enough",
+    "url": "/meme_templates/_I_ve%20Seen%20Enough.%20I_m%20Satisfied._%20-%20Dio%20Brando%2C%20JoJo_s%20Bizarre%20Adventure_%20Stardust%20Crusaders.jpg"
+  },
+  {
+    "id": "folder-tpl-27",
+    "name": "Is It Possible To Learn This Power",
+    "url": "/meme_templates/_Is%20It%20Possible%20to%20Learn%20This%20Power_%20-%20Star%20Wars_%20Episode%20III%20--%20Revenge%20of%20the%20Sith%2C%20Anakin%20Skywalker%2C%20Hayden%20Christensen.jpg"
+  },
+  {
+    "id": "folder-tpl-28",
+    "name": "Its A Surprise Tool",
+    "url": "/meme_templates/_It_s%20a%20Surprise%20Tool%20That%20Will%20Helps%20Us%20Later_%20-%20Mickey%20Mouse%20Clubhouse%2C%20Disney.jpg"
+  },
+  {
+    "id": "folder-tpl-29",
+    "name": "Im A Sign Not A Cop",
+    "url": "/meme_templates/_Keep%20out%20or%20enter.%20I_m%20a%20sign%2C%20not%20a%20cop_%20-%20Lisa%2C%20The%20Simpsons.jpg"
+  },
+  {
+    "id": "folder-tpl-30",
+    "name": "Hes Got A Point",
+    "url": "/meme_templates/_No%2C%20No.%20He%C3%A2%C2%80%C2%99s%20Got%20a%20Point_%20_No%2C%20No.%20He%20Has%20a%20Point_%20-%20Kron%2C%20The%20Emperor_s%20New%20Groove.jpg"
+  },
+  {
+    "id": "folder-tpl-31",
+    "name": "Parkour!",
+    "url": "/meme_templates/_Parkour!_%20-%20Michael%20Gary%20Scott%2C%20The%20Office.jpg"
+  },
+  {
+    "id": "folder-tpl-32",
+    "name": "Tell Me The Truth Im Ready",
+    "url": "/meme_templates/_Tell%20Me%20The%20Truth%20I_m%20Ready%20To%20Hear%20It_%20_%20Tell%20Me%20The%20Truth%C3%A2%C2%80%C2%A6I_m%C3%A2%C2%80%C2%A6I_m%20Ready%20To%20Hear%20It%20-%20Spider-Man%20Empty%20Template%20-%20No%20Text.jpg"
+  },
+  {
+    "id": "folder-tpl-33",
+    "name": "Tell Me The Truth Im Ready",
+    "url": "/meme_templates/_Tell%20Me%20The%20Truth%20I_m%20Ready%20To%20Hear%20It_%20_%20Tell%20Me%20The%20Truth%C3%A2%C2%80%C2%A6I_m%C3%A2%C2%80%C2%A6I_m%20Ready%20To%20Hear%20It%20-%20Spider-Man%20Template.jpg"
+  },
+  {
+    "id": "folder-tpl-34",
+    "name": "Virgin Crying Boy vs Chad",
+    "url": "/meme_templates/virgin%20crying%20boy%20chad%20girl.jpg"
   }
 ];
