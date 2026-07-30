@@ -49,35 +49,30 @@ export default function App() {
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
   }, [lang]);
 
-  // Monitor room state transitions to trigger phase loading screens for all players
+  // Monitor room state transitions to trigger synchronized phase loading screens for all players
   useEffect(() => {
     if (!room) {
-      prevRoomRef.current = null;
       setIsPhaseLoading(false);
       return;
     }
 
-    const current = { state: room.state, round: room.currentRound };
-
-    if (prevRoomRef.current) {
-      if (
-        prevRoomRef.current.state !== current.state ||
-        prevRoomRef.current.round !== current.round
-      ) {
-        setPhaseLoadingState(room.state);
-        setIsPhaseLoading(true);
-
-        const timer = setTimeout(() => {
-          setIsPhaseLoading(false);
-        }, 2500);
-
-        prevRoomRef.current = current;
-        return () => clearTimeout(timer);
+    const checkPhaseLoading = () => {
+      const LOADING_DURATION = 2500;
+      if (room.phaseStartTime) {
+        const elapsed = Date.now() - room.phaseStartTime;
+        if (elapsed >= 0 && elapsed < LOADING_DURATION) {
+          setPhaseLoadingState(room.state);
+          setIsPhaseLoading(true);
+          return;
+        }
       }
-    } else {
-      prevRoomRef.current = current;
-    }
-  }, [room?.state, room?.currentRound]);
+      setIsPhaseLoading(false);
+    };
+
+    checkPhaseLoading();
+    const interval = setInterval(checkPhaseLoading, 200);
+    return () => clearInterval(interval);
+  }, [room?.phaseStartTime, room?.state, room?.currentRound]);
 
   // Helper to show error toast
   const showError = (msg: string) => {

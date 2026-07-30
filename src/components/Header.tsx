@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Trophy, Users, Copy, Check, LogOut, Globe } from 'lucide-react';
+import { Trophy, Users, Copy, Check, LogOut, Globe, Flame } from 'lucide-react';
 import { Player, Room } from '../types';
 import { Language, Translations } from '../i18n';
 

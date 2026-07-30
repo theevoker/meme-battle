@@ -38,32 +38,50 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     let processed = 0;
     const addedTemplates: MemeTemplate[] = [];
 
+    const checkDone = () => {
+      processed++;
+      if (processed === fileList.length && addedTemplates.length > 0) {
+        onUpdateSettings({
+          ...room.settings,
+          customTemplates: [...room.settings.customTemplates, ...addedTemplates]
+        });
+      }
+    };
+
     fileList.forEach((file) => {
       if (!file.type.startsWith('image/')) {
-        processed++;
+        checkDone();
         return;
       }
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          const rawUrl = event.target.result as string;
-          const compressedUrl = await compressImageDataUrl(rawUrl);
-          addedTemplates.push({
-            id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            name: file.name.replace(/\.[^/.]+$/, ''),
-            url: compressedUrl,
-            isCustom: true
-          });
-        }
-        processed++;
-        if (processed === fileList.length && addedTemplates.length > 0) {
-          onUpdateSettings({
-            ...room.settings,
-            customTemplates: [...room.settings.customTemplates, ...addedTemplates]
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            if (event.target?.result) {
+              const rawUrl = event.target.result as string;
+              const compressedUrl = await compressImageDataUrl(rawUrl);
+              addedTemplates.push({
+                id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                name: file.name.replace(/\.[^/.]+$/, ''),
+                url: compressedUrl,
+                isCustom: true
+              });
+            }
+          } catch (err) {
+            console.warn('Skipping problematic image file:', file.name, err);
+          } finally {
+            checkDone();
+          }
+        };
+        reader.onerror = () => {
+          console.warn('FileReader error for file:', file.name);
+          checkDone();
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Failed to read file:', file.name, err);
+        checkDone();
+      }
     });
     e.target.value = '';
   };

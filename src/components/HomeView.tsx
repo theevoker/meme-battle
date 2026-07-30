@@ -35,29 +35,47 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
     let processed = 0;
     const addedTemplates: MemeTemplate[] = [];
 
+    const checkDone = () => {
+      processed++;
+      if (processed === fileList.length && addedTemplates.length > 0) {
+        setCustomTemplates((prev) => [...prev, ...addedTemplates]);
+      }
+    };
+
     fileList.forEach((file) => {
       if (!file.type.startsWith('image/')) {
-        processed++;
+        checkDone();
         return;
       }
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          const rawUrl = event.target.result as string;
-          const compressedUrl = await compressImageDataUrl(rawUrl);
-          addedTemplates.push({
-            id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            name: file.name.replace(/\.[^/.]+$/, ''),
-            url: compressedUrl,
-            isCustom: true
-          });
-        }
-        processed++;
-        if (processed === fileList.length && addedTemplates.length > 0) {
-          setCustomTemplates((prev) => [...prev, ...addedTemplates]);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            if (event.target?.result) {
+              const rawUrl = event.target.result as string;
+              const compressedUrl = await compressImageDataUrl(rawUrl);
+              addedTemplates.push({
+                id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                name: file.name.replace(/\.[^/.]+$/, ''),
+                url: compressedUrl,
+                isCustom: true
+              });
+            }
+          } catch (err) {
+            console.warn('Skipping problematic image file:', file.name, err);
+          } finally {
+            checkDone();
+          }
+        };
+        reader.onerror = () => {
+          console.warn('FileReader error for file:', file.name);
+          checkDone();
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Failed to read file:', file.name, err);
+        checkDone();
+      }
     });
     e.target.value = '';
   };
@@ -75,30 +93,35 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
 
       const fileEntries = Object.keys(zipContent.files);
       for (const filename of fileEntries) {
-        const entry = zipContent.files[filename];
-        if (entry.dir) continue;
-        const lower = filename.toLowerCase();
-        if (
-          lower.endsWith('.png') ||
-          lower.endsWith('.jpg') ||
-          lower.endsWith('.jpeg') ||
-          lower.endsWith('.webp') ||
-          lower.endsWith('.gif')
-        ) {
-          const blob = await entry.async('blob');
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => resolve(ev.target?.result as string);
-            reader.readAsDataURL(blob);
-          });
-          const compressedUrl = await compressImageDataUrl(base64);
-          const cleanName = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'Template';
-          extractedTemplates.push({
-            id: `zip_tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            name: cleanName,
-            url: compressedUrl,
-            isCustom: true
-          });
+        try {
+          const entry = zipContent.files[filename];
+          if (entry.dir) continue;
+          const lower = filename.toLowerCase();
+          if (
+            lower.endsWith('.png') ||
+            lower.endsWith('.jpg') ||
+            lower.endsWith('.jpeg') ||
+            lower.endsWith('.webp') ||
+            lower.endsWith('.gif')
+          ) {
+            const blob = await entry.async('blob');
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => resolve(ev.target?.result as string);
+              reader.onerror = (err) => reject(err);
+              reader.readAsDataURL(blob);
+            });
+            const compressedUrl = await compressImageDataUrl(base64);
+            const cleanName = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'Template';
+            extractedTemplates.push({
+              id: `zip_tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              name: cleanName,
+              url: compressedUrl,
+              isCustom: true
+            });
+          }
+        } catch (fileErr) {
+          console.warn(`Skipping corrupted or unreadable image in zip (${filename}):`, fileErr);
         }
       }
 
@@ -431,19 +454,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
                 <span>Vote on opponents' memes: <strong>Like (+200 pts)</strong>, <strong>Meh (0 pts)</strong>, <strong>Dislike (-200 pts)</strong>.</span>
               </li>
             </ul>
-          </div>
-
-          {/* Card 2: Strict Voting Rule Highlight */}
-          <div className="bg-gradient-to-br from-rose-950/40 to-slate-900 border border-rose-500/30 rounded-2xl p-4 sm:p-5 shadow-xl">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <ShieldCheck className="w-6 h-6 text-rose-400 flex-shrink-0" />
-              <div>
-                <h4 className="font-bold text-xs text-rose-300 uppercase tracking-wider">STRICT FAIR VOTING GUARANTEE</h4>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Self-voting is strictly forbidden on the server! You cannot vote on your own meme submission.
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Card 3: Live Stats Banner */}

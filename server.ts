@@ -135,6 +135,7 @@ function updateRoomTimeouts(room: Room): boolean {
 function startRoundCreationPhase(room: Room) {
   room.state = 'MEME_CREATION';
   room.roundStartTime = Date.now();
+  room.phaseStartTime = Date.now();
   saveDatabase();
 }
 
@@ -156,6 +157,7 @@ function startShowcaseVotingPhase(room: Room) {
       startRoundCreationPhase(room);
     } else {
       room.state = 'FINAL_LEADERBOARD';
+      room.phaseStartTime = Date.now();
       saveDatabase();
     }
     return;
@@ -178,6 +180,7 @@ function startShowcaseVotingPhase(room: Room) {
   room.state = 'SHOWCASE_VOTING';
   room.currentShowcaseIndex = 0;
   room.showcaseStartTime = Date.now();
+  room.phaseStartTime = Date.now();
   saveDatabase();
 }
 
@@ -241,6 +244,7 @@ function calculateRoundResults(room: Room) {
   room.roundScores[currentRound] = roundPointsEarned;
 
   room.state = 'ROUND_RESULTS';
+  room.phaseStartTime = Date.now();
   saveDatabase();
 }
 
@@ -548,6 +552,7 @@ app.post('/api/rooms/:code/next-round', (req, res) => {
       startRoundCreationPhase(room);
     } else {
       room.state = 'FINAL_LEADERBOARD';
+      room.phaseStartTime = Date.now();
       saveDatabase();
     }
 
@@ -567,6 +572,7 @@ app.post('/api/rooms/:code/restart', (req, res) => {
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
 
     room.state = 'LOBBY';
+    room.phaseStartTime = Date.now();
     room.currentRound = 1;
     room.submissions = {};
     room.votes = {};
@@ -641,7 +647,7 @@ async function startApp() {
     });
   }
 
-  const PORT = process.env.PORT || 8080;
+  const PORT = 3000;
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Meme Battle Database-Polling REST API server listening on http://0.0.0.0:${PORT}`);
   });
