@@ -34,22 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 py-2.5 px-3 sm:px-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-        {/* Brand Logo */}
-        <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-rose-500 p-0.5 shadow-lg shadow-indigo-500/20">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 animate-pulse" />
-            </div>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="font-extrabold text-base sm:text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
-              {t.appName}
-            </h1>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium tracking-wide uppercase">
-              Realtime Arena
-            </p>
-          </div>
-        </div>
 
         {/* Header Right Actions */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse">
