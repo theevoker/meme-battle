@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "Room": {
+      "collectionName": "rooms",
+      "fields": {
+        "code": { "type": "string", "required": true },
+        "hostId": { "type": "string", "required": true },
+        "state": { "type": "string", "required": true },
+        "currentRound": { "type": "number", "required": true },
+        "roundStartTime": { "type": "number" },
+        "showcaseStartTime": { "type": "number" },
+        "currentShowcaseIndex": { "type": "number", "required": true },
+        "settings": { "type": "map" },
+        "players": { "type": "map" },
+        "submissions": { "type": "map" },
+        "votes": { "type": "map" },
+        "roundScores": { "type": "map" },
+        "updatedAt": { "type": "number" }
+      }
+    }
+  }
+}

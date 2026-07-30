@@ -1,0 +1,6 @@
+{
+  "name": "Meme Battle",
+  "description": "Real-time multiplayer meme creation & battle game with custom templates, drag & drop canvas editor, and live voting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
