@@ -25,7 +25,7 @@ export function getDefaultServerUrl(): string {
   }
 
   // Fallback dev/prod server URL for Capacitor APK builds
-  return 'https://ais-dev-klz53wq6h3cusoltv5ba4b-371092946513.europe-west2.run.app';
+  return 'https://meme.gamebywacht.site';
 }
 
 // Get the effective backend server URL for Socket.IO connection

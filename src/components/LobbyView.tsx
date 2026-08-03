@@ -21,6 +21,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const playersList = Object.values(room.players) as Player[];
+  const connectedPlayersCount = playersList.filter(p => p.isConnected).length;
+  const canStart = connectedPlayersCount >= 2;
   const isHost = currentPlayer.isHost;
 
   const copyRoomCode = () => {
@@ -253,14 +255,26 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           {/* Launch / Waiting Section */}
           <div>
             {isHost ? (
-              <button
-                type="button"
-                onClick={onStartGame}
-                className="w-full min-h-[52px] py-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600 text-white font-black text-sm sm:text-base tracking-wide shadow-xl shadow-indigo-500/25 transition-all flex items-center justify-center space-x-2 rtl:space-x-reverse cursor-pointer touch-manipulation active:scale-[0.98]"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>{t.startGame}</span>
-              </button>
+              <div className="space-y-2">
+                {!canStart && (
+                  <div className="text-center text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
+                    <span>{t.needMorePlayers}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={onStartGame}
+                  disabled={!canStart}
+                  className={`w-full min-h-[52px] py-4 rounded-xl text-white font-black text-sm sm:text-base tracking-wide transition-all flex items-center justify-center space-x-2 rtl:space-x-reverse touch-manipulation ${
+                    canStart
+                      ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600 shadow-xl shadow-indigo-500/25 cursor-pointer active:scale-[0.98]'
+                      : 'bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  <span>{t.startGame}</span>
+                </button>
+              </div>
             ) : (
               <div className="text-center p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-indigo-300 font-medium text-xs flex items-center justify-center space-x-2 rtl:space-x-reverse">
                 <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />

@@ -464,6 +464,11 @@ app.post('/api/rooms/:code/start', (req, res) => {
     room.lastActivity = Date.now();
     if (room.hostId !== playerId) return res.status(403).json({ success: false, message: 'Only host can start game' });
 
+    const connectedCount = Object.values(room.players).filter(p => p.isConnected).length;
+    if (connectedCount < 2) {
+      return res.status(400).json({ success: false, message: 'At least 2 players are required to start the game' });
+    }
+
     room.currentRound = 1;
     room.submissions = {};
     room.votes = {};
@@ -683,7 +688,7 @@ async function startApp() {
     });
   }
 
-  const PORT = 8080;
+  const PORT = 3000;
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Meme Battle Database-Polling REST API server listening on http://0.0.0.0:${PORT}`);
   });
