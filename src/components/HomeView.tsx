@@ -9,15 +9,23 @@ interface HomeViewProps {
   onCreateRoom: (hostName: string, settings: GameSettings) => void;
   onJoinRoom: (roomCode: string, playerName: string) => void;
   errorMsg: string | null;
+  initialRoomCode?: string | null;
   t: Translations;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, errorMsg, t }) => {
-  const [activeTab, setActiveTab] = useState<'JOIN' | 'CREATE'>('CREATE');
+export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, errorMsg, initialRoomCode, t }) => {
+  const [activeTab, setActiveTab] = useState<'JOIN' | 'CREATE'>(initialRoomCode ? 'JOIN' : 'CREATE');
 
   // Player input
   const [playerName, setPlayerName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(initialRoomCode || '');
+
+  React.useEffect(() => {
+    if (initialRoomCode) {
+      setRoomCode(initialRoomCode);
+      setActiveTab('JOIN');
+    }
+  }, [initialRoomCode]);
 
   // Create Settings
   const [totalRounds, setTotalRounds] = useState(3);
@@ -377,6 +385,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
           {/* JOIN GAME FORM */}
           {activeTab === 'JOIN' && (
             <form onSubmit={handleJoinSubmit} className="space-y-5 sm:space-y-6">
+              {roomCode.length === 4 && (
+                <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-bold flex items-center space-x-2.5 rtl:space-x-reverse shadow-lg shadow-indigo-950/20">
+                  <Sparkles className="w-5 h-5 text-indigo-400 flex-shrink-0" />
+                  <span>{t.invitedToRoom ? t.invitedToRoom.replace('{code}', roomCode) : `Invited to join Room #${roomCode}! Pick your nickname to enter.`}</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                   {t.nickname}
@@ -385,6 +400,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
                   type="text"
                   maxLength={20}
                   value={playerName}
+                  autoFocus={Boolean(initialRoomCode)}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder={t.enterNickname}
                   className="w-full bg-slate-950/90 border border-slate-700/80 focus:border-indigo-500 rounded-xl py-3 px-4 text-white placeholder-slate-500 outline-none transition-all font-medium min-h-[44px]"

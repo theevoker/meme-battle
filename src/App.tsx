@@ -24,6 +24,15 @@ import {
 } from './lib/api';
 import { getServerUrl } from './lib/serverConfig';
 
+const getInitialUrlRoomCode = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (/^[a-zA-Z0-9]{4}$/.test(path)) {
+    return path.toUpperCase();
+  }
+  return null;
+};
+
 export default function App() {
   const [isConnected, setIsConnected] = useState(true);
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
@@ -34,6 +43,8 @@ export default function App() {
   const [room, setRoom] = useState<Room | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [urlRoomCode, setUrlRoomCode] = useState<string | null>(getInitialUrlRoomCode());
 
   // Current timestamp tick to keep time-dependent phase loading derived state fresh
   const [now, setNow] = useState<number>(Date.now());
@@ -97,7 +108,15 @@ export default function App() {
     }
   }, [room?.code, myPlayerId]);
 
-  // Setup 1-second polling loop when inside a room
+  // Keep window URL path synchronized with active room code
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (room?.code) {
+      if (window.location.pathname !== `/${room.code}`) {
+        window.history.replaceState(null, '', `/${room.code}`);
+      }
+    }
+  }, [room?.code]);
   useEffect(() => {
     if (!room?.code || !myPlayerId) return;
 
@@ -249,6 +268,10 @@ export default function App() {
     localStorage.removeItem('meme_battle_player_id');
     setRoom(null);
     setMyPlayerId(null);
+    setUrlRoomCode(null);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '/');
+    }
   };
 
   // Find active player object
@@ -287,6 +310,7 @@ export default function App() {
             onCreateRoom={handleCreateRoom}
             onJoinRoom={handleJoinRoom}
             errorMsg={errorMsg}
+            initialRoomCode={urlRoomCode}
             t={t}
           />
         ) : isPhaseLoading ? (

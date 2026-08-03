@@ -91,6 +91,10 @@ export interface Translations {
   phaseLoadingResultsSub: string;
   phaseLoadingFinalTitle: string;
   phaseLoadingFinalSub: string;
+  shareLink: string;
+  linkCopied: string;
+  shareGame: string;
+  invitedToRoom: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -184,7 +188,11 @@ export const translations: Record<Language, Translations> = {
     phaseLoadingResultsTitle: 'Tallying the Votes!',
     phaseLoadingResultsSub: 'Calculating scores and determining the round winner...',
     phaseLoadingFinalTitle: 'Battle Completed!',
-    phaseLoadingFinalSub: 'Preparing the final podium and declaring the ultimate Meme Champion...'
+    phaseLoadingFinalSub: 'Preparing the final podium and declaring the ultimate Meme Champion...',
+    shareLink: 'Share Link',
+    linkCopied: 'Link Copied!',
+    shareGame: 'Share Game',
+    invitedToRoom: 'Invited to join Room #{code}! Pick your nickname to enter.'
   },
   he: {
     appName: 'קרב הממים',
@@ -276,7 +284,11 @@ export const translations: Record<Language, Translations> = {
     phaseLoadingResultsTitle: 'מחשב את הניקוד!',
     phaseLoadingResultsSub: 'סופר את הקולות מכל השחקנים וקובע את המנצח...',
     phaseLoadingFinalTitle: 'הקרב הסתיים!',
-    phaseLoadingFinalSub: 'מכין את פודיום הניצחון ומכריז על אלוף הממים הגדול...'
+    phaseLoadingFinalSub: 'מכין את פודיום הניצחון ומכריז על אלוף הממים הגדול...',
+    shareLink: 'שתף קישור',
+    linkCopied: 'הקישור הועתק!',
+    shareGame: 'שתף משחק',
+    invitedToRoom: 'הוזמנת להצטרף לחדר #{code}! בחר כינוי כדי להיכנס.'
   }
 };
 

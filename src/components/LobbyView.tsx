@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Users, Play, Crown, Upload, Clock, Layers, Sparkles } from 'lucide-react';
+import { Copy, Check, Users, Play, Crown, Upload, Clock, Layers, Sparkles, Share2 } from 'lucide-react';
 import { GameSettings, MemeTemplate, Player, Room } from '../types';
 import { Translations } from '../i18n';
 import { compressImageDataUrl } from '../utils/imageCompressor';
@@ -20,15 +20,41 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   t
 }) => {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const playersList = Object.values(room.players) as Player[];
   const connectedPlayersCount = playersList.filter(p => p.isConnected).length;
   const canStart = connectedPlayersCount >= 2;
   const isHost = currentPlayer.isHost;
 
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/${room.code}` : '';
+
   const copyRoomCode = () => {
     navigator.clipboard.writeText(room.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareLink = async () => {
+    const fullLink = `${window.location.origin}/${room.code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Meme Battle Arena',
+          text: `Join my Meme Battle room #${room.code}!`,
+          url: fullLink,
+        });
+        return;
+      } catch {
+        // Fallback to copying URL if native share is dismissed or unsupported
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(fullLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
   };
 
   // Host template upload
@@ -111,21 +137,47 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           Share the 4-digit code with your friends to join in real time.
         </p>
 
-        {/* Room Code Banner */}
-        <div className="inline-flex items-center justify-center space-x-3 rtl:space-x-reverse bg-slate-950/90 border-2 border-indigo-500/50 p-3 sm:p-4 rounded-2xl shadow-inner">
-          <span className="text-xs font-bold text-slate-400 tracking-wider">{t.roomCode}:</span>
-          <span className="font-mono text-2xl sm:text-4xl font-black text-indigo-400 tracking-widest">
-            {room.code}
-          </span>
+        {/* Room Code & Share Link Banner */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="inline-flex items-center justify-center space-x-3 rtl:space-x-reverse bg-slate-950/90 border-2 border-indigo-500/50 p-3 sm:p-4 rounded-2xl shadow-inner">
+            <span className="text-xs font-bold text-slate-400 tracking-wider">{t.roomCode}:</span>
+            <span className="font-mono text-2xl sm:text-4xl font-black text-indigo-400 tracking-widest">
+              {room.code}
+            </span>
+            <button
+              type="button"
+              onClick={copyRoomCode}
+              className="ml-2 bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl transition-all shadow-md cursor-pointer flex items-center space-x-1 min-h-[44px] touch-manipulation active:scale-95"
+              title="Copy room code"
+            >
+              {copied ? <Check className="w-5 h-5 text-emerald-300" /> : <Copy className="w-5 h-5" />}
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={copyRoomCode}
-            className="ml-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition-all shadow-md cursor-pointer flex items-center space-x-1 min-h-[44px] touch-manipulation active:scale-95"
-            title="Copy room code"
+            onClick={handleShareLink}
+            className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600 text-white px-5 py-3.5 sm:py-4 rounded-2xl font-black text-xs sm:text-sm tracking-wide shadow-xl shadow-indigo-500/25 transition-all flex items-center justify-center space-x-2 rtl:space-x-reverse cursor-pointer min-h-[52px] touch-manipulation active:scale-95"
           >
-            {copied ? <Check className="w-5 h-5 text-emerald-300" /> : <Copy className="w-5 h-5" />}
+            {linkCopied ? (
+              <>
+                <Check className="w-5 h-5 text-emerald-300" />
+                <span>{t.linkCopied}</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-5 h-5" />
+                <span>{t.shareLink}</span>
+              </>
+            )}
           </button>
         </div>
+
+        {shareUrl && (
+          <div className="mt-3 text-[11px] font-mono text-indigo-300/80 bg-slate-950/50 border border-slate-800/80 px-3 py-1.5 rounded-xl inline-block">
+            {shareUrl}
+          </div>
+        )}
       </div>
 
       {/* Main Grid: Players List & Settings */}
