@@ -20,7 +20,7 @@ call npm install @capacitor/core @capacitor/cli @capacitor/android
 if not exist "capacitor.config.json" if not exist "capacitor.config.ts" (
     echo.
     echo Step 2: Initializing Capacitor...
-    call npx cap init "Meme Battle" "com.memebattle.app" --web-dir "dist"
+    call npx cap init "Meme Battle" "site.gamebywacht.meme" --web-dir "dist"
 )
 
 echo.
