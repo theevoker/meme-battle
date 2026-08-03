@@ -2,7 +2,7 @@
   {
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
-      "namespace": "meme_battle",
+      "namespace": "android_app",
       "package_name": "site.gamebywacht.meme",
       "sha256_cert_fingerprints": [
         "F4:47:66:D9:B7:60:8F:FD:53:8A:66:E7:F1:59:A6:01:C5:9B:AE:32:8D:A2:C3:CA:3F:2E:84:02:33:07:9C:BA"
