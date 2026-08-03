@@ -665,6 +665,21 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   next(err);
 });
 
+// Serve Digital Asset Links for Android App Links
+app.get(['/.well-known/assetlinks.json', '/assetlinks.json'], (req, res) => {
+  const fileInWellKnown = path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json');
+  const fileInDist = path.join(process.cwd(), 'dist', '.well-known', 'assetlinks.json');
+  const targetFile = fs.existsSync(fileInWellKnown) ? fileInWellKnown : (fs.existsSync(fileInDist) ? fileInDist : null);
+
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Content-Type', 'application/json');
+  if (targetFile) {
+    res.sendFile(targetFile);
+  } else {
+    res.status(404).json({ error: 'assetlinks.json not found' });
+  }
+});
+
 // Serve frontend assets in production or Vite middleware in development
 async function startApp() {
   const server = http.createServer(app);
