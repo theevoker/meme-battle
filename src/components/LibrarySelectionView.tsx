@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Plus, Upload, Check, Folder, Sparkles, Edit3, ShieldAlert, FileText, CheckCircle2 } from 'lucide-react';
+import { Layers, Plus, Upload, Check, Folder, Sparkles, Edit3, ShieldAlert, FileText, CheckCircle2, Star } from 'lucide-react';
 import JSZip from 'jszip';
 import { PhotoLibrary, MemeTemplate, ImageTextPositionsMap } from '../types';
 import { LibraryPositionEditorModal } from './LibraryPositionEditorModal';
@@ -21,6 +21,27 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
   const [libraries, setLibraries] = useState<PhotoLibrary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Favorites / Pinned Libraries state
+  const [favoriteLibraryIds, setFavoriteLibraryIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('mb_favorite_library_ids');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const toggleFavoriteLibrary = (libId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteLibraryIds((prev) => {
+      const isFav = prev.includes(libId);
+      const next = isFav ? prev.filter((id) => id !== libId) : [...prev, libId];
+      try {
+        localStorage.setItem('mb_favorite_library_ids', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // New Library Modal State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -268,83 +289,115 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {libraries.map((lib) => {
-            const isSelected = selectedLibraryIds.includes(lib.id) || selectedLibraryIds.includes(lib.folderName);
-            const coverImg = lib.images?.[0]?.url || '';
+          {libraries
+            .slice()
+            .sort((a, b) => {
+              const aFav = favoriteLibraryIds.includes(a.id) || favoriteLibraryIds.includes(a.folderName);
+              const bFav = favoriteLibraryIds.includes(b.id) || favoriteLibraryIds.includes(b.folderName);
+              if (aFav && !bFav) return -1;
+              if (!aFav && bFav) return 1;
+              return 0;
+            })
+            .map((lib) => {
+              const isSelected = selectedLibraryIds.includes(lib.id) || selectedLibraryIds.includes(lib.folderName);
+              const isFavorite = favoriteLibraryIds.includes(lib.id) || favoriteLibraryIds.includes(lib.folderName);
+              const coverImg = lib.images?.[0]?.url || '';
 
-            return (
-              <div
-                key={lib.id}
-                onClick={() => onToggleLibrary(lib.id)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between relative overflow-hidden ${
-                  isSelected
-                    ? 'bg-indigo-950/40 border-indigo-500/70 shadow-lg shadow-indigo-950/40'
-                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  {coverImg ? (
-                    <img
-                      src={coverImg}
-                      alt={lib.displayName}
-                      className="w-12 h-12 rounded-lg object-cover border border-slate-700"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400">
-                      <Folder className="w-6 h-6" />
+              return (
+                <div
+                  key={lib.id}
+                  onClick={() => onToggleLibrary(lib.id)}
+                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between relative overflow-hidden ${
+                    isSelected
+                      ? 'bg-indigo-950/40 border-indigo-500/70 shadow-lg shadow-indigo-950/40'
+                      : isFavorite
+                      ? 'bg-slate-950/80 border-amber-500/40 shadow-md shadow-amber-950/20'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                    {coverImg ? (
+                      <img
+                        src={coverImg}
+                        alt={lib.displayName}
+                        className="w-12 h-12 rounded-lg object-cover border border-slate-700"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400">
+                        <Folder className="w-6 h-6" />
+                      </div>
+                    )}
+
+                    <div>
+                      <h4 className="text-xs font-bold text-white flex items-center space-x-1.5 flex-wrap gap-1">
+                        <span>{lib.displayName}</span>
+                        {isFavorite && (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-extrabold inline-flex items-center space-x-1">
+                            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                            <span>Pinned</span>
+                          </span>
+                        )}
+                        {lib.isBuiltIn && (
+                          <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-mono">
+                            Built-in
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[11px] text-slate-400">
+                        {lib.images?.length || 0} templates
+                      </p>
                     </div>
-                  )}
-
-                  <div>
-                    <h4 className="text-xs font-bold text-white flex items-center space-x-1.5">
-                      <span>{lib.displayName}</span>
-                      {lib.isBuiltIn && (
-                        <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono">
-                          Built-in
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      {lib.images?.length || 0} templates
-                    </p>
                   </div>
-                </div>
 
-                <div className="flex items-center space-x-2">
-                  {!lib.isBuiltIn && (
+                  <div className="flex items-center space-x-2">
+                    {/* Favorite / Pin Star Button */}
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveEditingLibrary({
-                          displayName: lib.displayName,
-                          folderName: lib.folderName,
-                          images: lib.images,
-                          positionsMap: lib.textPositionsMap || {},
-                          libraryId: lib.id
-                        });
-                        setEditorModalOpen(true);
-                      }}
-                      title="Edit text box positions"
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      onClick={(e) => toggleFavoriteLibrary(lib.id, e)}
+                      title={isFavorite ? "Unpin from top" : "Pin library to top"}
+                      className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                        isFavorite
+                          ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
+                          : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-amber-400 hover:border-slate-700'
+                      }`}
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-amber-400 text-amber-400' : ''}`} />
                     </button>
-                  )}
 
-                  <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                      isSelected
-                        ? 'bg-indigo-500 border-indigo-400 text-white'
-                        : 'border-slate-700 bg-slate-900'
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3.5 h-3.5" />}
+                    {!lib.isBuiltIn && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveEditingLibrary({
+                            displayName: lib.displayName,
+                            folderName: lib.folderName,
+                            images: lib.images,
+                            positionsMap: lib.textPositionsMap || {},
+                            libraryId: lib.id
+                          });
+                          setEditorModalOpen(true);
+                        }}
+                        title="Edit text box positions"
+                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    <div
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'bg-indigo-500 border-indigo-400 text-white'
+                          : 'border-slate-700 bg-slate-900'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3.5 h-3.5" />}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )}
 
