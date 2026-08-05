@@ -168,7 +168,7 @@ export const DeveloperJsonModal: React.FC<DeveloperJsonModalProps> = ({
       textPositions: [
         {
           id: 'text-1',
-          text: 'TOP TEXT',
+          text: 'Text 1',
           x: 50,
           y: 15,
           fontSize: 36,
@@ -181,7 +181,7 @@ export const DeveloperJsonModal: React.FC<DeveloperJsonModalProps> = ({
         },
         {
           id: 'text-2',
-          text: 'BOTTOM TEXT',
+          text: 'Text 2',
           x: 50,
           y: 85,
           fontSize: 36,

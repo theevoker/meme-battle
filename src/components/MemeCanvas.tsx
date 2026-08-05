@@ -35,7 +35,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
   const [textElements, setTextElements] = useState<TextElement[]>([
     {
       id: 'text-1',
-      text: 'TOP TEXT HERE',
+      text: 'Text 1',
       x: 50, // center 50%
       y: 12, // top 12%
       fontSize: 36,
@@ -48,7 +48,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
     },
     {
       id: 'text-2',
-      text: 'BOTTOM TEXT HERE',
+      text: 'Text 2',
       x: 50,
       y: 88, // bottom 88%
       fontSize: 36,
@@ -66,7 +66,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
     if (template.textPositions && template.textPositions.length > 0) {
       const elements: TextElement[] = template.textPositions.map((pos, idx) => ({
         id: pos.id || `text-${idx + 1}`,
-        text: pos.text || (idx === 0 ? 'TOP TEXT HERE' : 'BOTTOM TEXT HERE'),
+        text: pos.text || `Text ${idx + 1}`,
         x: pos.x,
         y: pos.y,
         fontSize: pos.fontSize || 36,
@@ -86,7 +86,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
       const defaults: TextElement[] = [
         {
           id: 'text-1',
-          text: 'TOP TEXT HERE',
+          text: 'Text 1',
           x: 50,
           y: 12,
           fontSize: 36,
@@ -99,7 +99,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
         },
         {
           id: 'text-2',
-          text: 'BOTTOM TEXT HERE',
+          text: 'Text 2',
           x: 50,
           y: 88,
           fontSize: 36,
@@ -287,9 +287,10 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
 
   // Add new text element
   const addTextElement = () => {
+    const nextNum = textElements.length + 1;
     const newEl: TextElement = {
       id: `text_${Date.now()}`,
-      text: 'NEW CAPTION',
+      text: `Text ${nextNum}`,
       x: 50,
       y: 50,
       fontSize: 32,

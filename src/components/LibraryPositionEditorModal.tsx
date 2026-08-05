@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, Save, Move, Type, Palette, ShieldCheck, Sparkles } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Plus, Trash2, Check, Save, Move, ShieldCheck, Sparkles } from 'lucide-react';
 import { MemeTemplate, TextPositionConfig, ImageTextPositionsMap } from '../types';
 
 interface LibraryPositionEditorModalProps {
@@ -39,8 +39,11 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [selectedTextId, setSelectedTextId] = useState<string>('text-1');
 
-  const activeImage = images[currentIdx] || images[0];
+  // Dragging state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const activeImage = images[currentIdx] || images[0];
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Active positions for current image
@@ -51,7 +54,7 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
     (activeImage?.id ? positionsMap[activeImage.id] : undefined) || [
       {
         id: 'text-1',
-        text: 'TOP TEXT',
+        text: 'Text 1',
         x: 50,
         y: 15,
         fontSize: 36,
@@ -64,7 +67,7 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
       },
       {
         id: 'text-2',
-        text: 'BOTTOM TEXT',
+        text: 'Text 2',
         x: 50,
         y: 85,
         fontSize: 36,
@@ -119,7 +122,7 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
       ctx.drawImage(img, 0, 0, width, height);
 
       currentPositions.forEach((el) => {
-        const textToDraw = el.isUppercase ? (el.text || 'TEXT').toUpperCase() : (el.text || 'TEXT');
+        const textToDraw = el.isUppercase ? (el.text || 'Text').toUpperCase() : (el.text || 'Text');
         const posX = (el.x / 100) * width;
         const posY = (el.y / 100) * height;
 
@@ -139,15 +142,15 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
         ctx.fillStyle = el.color;
         ctx.fillText(textToDraw, posX, posY);
 
-        // Highlight selected
+        // Highlight selected box
         if (el.id === selectedTextId) {
           ctx.save();
           ctx.strokeStyle = '#38BDF8';
           ctx.lineWidth = 2;
           ctx.setLineDash([4, 4]);
           const metrics = ctx.measureText(textToDraw);
-          const boxW = Math.max(metrics.width + 16, 60);
-          const boxH = el.fontSize + 12;
+          const boxW = Math.max(metrics.width + 20, 70);
+          const boxH = el.fontSize + 14;
           ctx.strokeRect(posX - boxW / 2, posY - boxH / 2, boxW, boxH);
           ctx.restore();
         }
@@ -176,10 +179,11 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
   };
 
   const handleAddText = () => {
+    const nextNum = currentPositions.length + 1;
     const newId = `text-${Date.now().toString(36)}`;
     const newPos: TextPositionConfig = {
       id: newId,
-      text: 'NEW CAPTION',
+      text: `Text ${nextNum}`,
       x: 50,
       y: 50,
       fontSize: 32,
@@ -201,6 +205,79 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
     if (selectedTextId === id) {
       setSelectedTextId(filtered[0]?.id || '');
     }
+  };
+
+  // Drag & Drop Handling for Canvas
+  const handleDragStart = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const clickX = ((clientX - rect.left) / rect.width) * 100;
+    const clickY = ((clientY - rect.top) / rect.height) * 100;
+
+    let closestId: string | null = null;
+    let minDistance = Infinity;
+
+    currentPositions.forEach((el) => {
+      const dist = Math.hypot(el.x - clickX, el.y - clickY);
+      if (dist < 30 && dist < minDistance) {
+        minDistance = dist;
+        closestId = el.id;
+      }
+    });
+
+    if (closestId) {
+      setSelectedTextId(closestId);
+      setDraggingId(closestId);
+      const el = currentPositions.find((t) => t.id === closestId);
+      if (el) {
+        setDragOffset({ x: clickX - el.x, y: clickY - el.y });
+      }
+    }
+  };
+
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!draggingId) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const newX = Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100 - dragOffset.x)));
+    const newY = Math.round(Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100 - dragOffset.y)));
+
+    const updated = currentPositions.map((t) =>
+      t.id === draggingId ? { ...t, x: newX, y: newY } : t
+    );
+    updateCurrentPositions(updated);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    handleDragStart(e.clientX, e.clientY);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    handleDragMove(e.clientX, e.clientY);
+  };
+
+  const handleMouseUp = () => {
+    setDraggingId(null);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length > 0) {
+      handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length > 0) {
+      handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setDraggingId(null);
   };
 
   const handleSaveAll = async () => {
@@ -248,7 +325,7 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
           {/* Left: Canvas & Image Carousel (7 cols) */}
           <div className="lg:col-span-7 flex flex-col items-center justify-center bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 relative">
             {/* Image Navigation Bar */}
-            <div className="w-full flex items-center justify-between mb-3 text-xs font-bold text-slate-400">
+            <div className="w-full flex items-center justify-between mb-2 text-xs font-bold text-slate-400">
               <span>Image {currentIdx + 1} of {images.length}</span>
               <div className="flex items-center space-x-2">
                 <button
@@ -270,9 +347,24 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
               </div>
             </div>
 
-            {/* Canvas Display */}
+            <p className="text-[11px] text-indigo-400 font-medium mb-2 flex items-center space-x-1">
+              <Move className="w-3.5 h-3.5" />
+              <span>Click or touch & drag text boxes on the image to set X, Y positions</span>
+            </p>
+
+            {/* Canvas Display with Drag Support */}
             <div className="relative border border-slate-800 rounded-lg overflow-hidden shadow-xl bg-black max-w-full">
-              <canvas ref={canvasRef} className="block mx-auto max-h-[360px] object-contain" />
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="block mx-auto max-h-[360px] object-contain cursor-move touch-none"
+              />
             </div>
 
             {/* Image Thumbnails Row */}
@@ -321,7 +413,7 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
                     }`}
                   >
                     <span className="truncate max-w-[160px] font-mono">
-                      Box {i + 1}: {pos.text || 'Untitled'}
+                      Box {i + 1}: {pos.text || 'Text'}
                     </span>
                     {currentPositions.length > 1 && (
                       <button
@@ -346,13 +438,13 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
                 {/* Caption Text Input */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
-                    Default Placeholder
+                    Default Text Placeholder
                   </label>
                   <input
                     type="text"
                     value={selectedText.text || ''}
                     onChange={(e) => handleUpdateTextProp('text', e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 px-3 text-white outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 px-3 text-white outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
 
