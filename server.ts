@@ -214,11 +214,23 @@ async function getAllLibraries(): Promise<PhotoLibrary[]> {
         }
 
         let positionsMap: ImageTextPositionsMap = {};
+        let creatorEmail: string | undefined = undefined;
         const jsonFile = files.find((f) => f.endsWith('.json'));
         if (jsonFile) {
           try {
             const rawJson = fs.readFileSync(path.join(folderPath, jsonFile), 'utf-8');
-            positionsMap = JSON.parse(rawJson);
+            const parsed = JSON.parse(rawJson);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              if (parsed.creator && typeof parsed.creator === 'string') {
+                creatorEmail = parsed.creator.trim().toLowerCase();
+              }
+              if (parsed.positions && typeof parsed.positions === 'object') {
+                positionsMap = parsed.positions;
+              } else {
+                const { creator, ...rest } = parsed;
+                positionsMap = rest as ImageTextPositionsMap;
+              }
+            }
           } catch (e) {
             console.warn(`Failed reading positions JSON for ${folderName}:`, e);
           }
@@ -248,7 +260,8 @@ async function getAllLibraries(): Promise<PhotoLibrary[]> {
           displayName,
           status,
           images,
-          textPositionsMap: positionsMap
+          textPositionsMap: positionsMap,
+          creator: creatorEmail
         };
       }
     }
@@ -299,12 +312,24 @@ async function getAllLibraries(): Promise<PhotoLibrary[]> {
         }
 
         let ghPositionsMap: ImageTextPositionsMap = {};
+        let ghCreatorEmail: string | undefined = undefined;
         const jsonItem = dirFiles.find((f) => f.name.toLowerCase().endsWith('.json'));
         if (jsonItem && jsonItem.download_url) {
           const jsonRes = await fetch(jsonItem.download_url, { headers: ghHeaders });
           if (jsonRes.ok) {
             try {
-              ghPositionsMap = await jsonRes.json();
+              const parsed = await jsonRes.json();
+              if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                if (parsed.creator && typeof parsed.creator === 'string') {
+                  ghCreatorEmail = parsed.creator.trim().toLowerCase();
+                }
+                if (parsed.positions && typeof parsed.positions === 'object') {
+                  ghPositionsMap = parsed.positions;
+                } else {
+                  const { creator, ...rest } = parsed;
+                  ghPositionsMap = rest as ImageTextPositionsMap;
+                }
+              }
             } catch (e) {}
           }
         }
@@ -328,8 +353,11 @@ async function getAllLibraries(): Promise<PhotoLibrary[]> {
         const parts = folderName.split(':');
         const displayName = parts[0] || folderName;
 
-        // If library already exists locally, update status and positions from GitHub if approved (status 5)
+        // If library already exists locally, update status, positions, and creator
         if (librariesMap[folderName]) {
+          if (ghCreatorEmail && !librariesMap[folderName].creator) {
+            librariesMap[folderName].creator = ghCreatorEmail;
+          }
           if (ghStatus !== null) {
             librariesMap[folderName].status = ghStatus;
             try {
@@ -355,7 +383,8 @@ async function getAllLibraries(): Promise<PhotoLibrary[]> {
             displayName,
             status: ghStatus !== null ? ghStatus : 0,
             images: ghImages,
-            textPositionsMap: ghPositionsMap
+            textPositionsMap: ghPositionsMap,
+            creator: ghCreatorEmail
           };
         }
       }
@@ -899,12 +928,17 @@ app.post('/api/developer/builtin-json', (req, res) => {
 
 // --- PHOTO LIBRARIES API ENDPOINTS ---
 
-// GET /api/libraries - Returns libraries where status !== 0 (or built-in)
+// GET /api/libraries - Returns libraries where status !== 0 (or built-in) OR creator matches requested email
 app.get('/api/libraries', async (req, res) => {
   try {
+    const userEmail = (req.query.userEmail as string || req.query.email as string || req.query.creator as string || '').trim().toLowerCase();
     const all = await getAllLibraries();
-    // Filter libraries: Built-in or status !== 0 (anything other than 0)
-    const filtered = all.filter((lib) => lib.isBuiltIn || lib.status !== 0);
+    // Filter libraries: Built-in or status !== 0 OR creator matches userEmail
+    const filtered = all.filter((lib) => {
+      if (lib.isBuiltIn || lib.status !== 0) return true;
+      if (userEmail && lib.creator && lib.creator.trim().toLowerCase() === userEmail) return true;
+      return false;
+    });
     res.json({ success: true, libraries: filtered });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message });
@@ -964,10 +998,12 @@ app.get('/api/libraries/file/:folderName/:fileName', async (req, res) => {
 // POST /api/libraries/upload - Uploads a new photo library
 app.post('/api/libraries/upload', async (req, res) => {
   try {
-    const { displayName, folderName, images, textPositionsMap, status } = req.body || {};
+    const { displayName, folderName, images, textPositionsMap, status, creator, userEmail } = req.body || {};
     if (!folderName || !images || !Array.isArray(images)) {
       return res.status(400).json({ success: false, message: 'Missing required library data.' });
     }
+
+    const creatorEmail = (creator || userEmail || '').trim().toLowerCase();
 
     const folderPath = path.join(LIBRARIES_DIR, folderName);
     if (!fs.existsSync(folderPath)) {
@@ -979,13 +1015,18 @@ app.post('/api/libraries/upload', async (req, res) => {
     const statusTxtPath = path.join(folderPath, 'status.txt');
     fs.writeFileSync(statusTxtPath, String(finalStatus), 'utf-8');
 
-    // Write positions.json file
+    // Build JSON object starting with creator property
+    const jsonContent = creatorEmail
+      ? { creator: creatorEmail, ...textPositionsMap }
+      : (textPositionsMap || {});
+
+    // Write positions.json file starting with creator
     const positionsPath = path.join(folderPath, 'positions.json');
-    fs.writeFileSync(positionsPath, JSON.stringify(textPositionsMap || {}, null, 2), 'utf-8');
+    fs.writeFileSync(positionsPath, JSON.stringify(jsonContent, null, 2), 'utf-8');
 
     // Push to GitHub if token available (await sequentially)
     await pushToGitHubRepo(`${folderName}/status.txt`, String(finalStatus), `Add status for ${folderName}`);
-    await pushToGitHubRepo(`${folderName}/positions.json`, JSON.stringify(textPositionsMap || {}, null, 2), `Add text positions for ${folderName}`);
+    await pushToGitHubRepo(`${folderName}/positions.json`, JSON.stringify(jsonContent, null, 2), `Add text positions for ${folderName}`);
 
     // Save image files
     const savedImages: MemeTemplate[] = [];
@@ -1036,7 +1077,8 @@ app.post('/api/libraries/upload', async (req, res) => {
       displayName: displayName || folderName,
       status: finalStatus,
       images: savedImages,
-      textPositionsMap: textPositionsMap || {}
+      textPositionsMap: textPositionsMap || {},
+      creator: creatorEmail || undefined
     };
 
     res.json({ success: true, library: createdLibrary });
@@ -1049,7 +1091,8 @@ app.post('/api/libraries/upload', async (req, res) => {
 app.post('/api/libraries/:folderName/positions', async (req, res) => {
   try {
     const { folderName } = req.params;
-    const { textPositionsMap } = req.body || {};
+    const { textPositionsMap, creator, userEmail } = req.body || {};
+    let creatorEmail = (creator || userEmail || '').trim().toLowerCase();
 
     const folderPath = path.join(LIBRARIES_DIR, folderName);
     if (!fs.existsSync(folderPath)) {
@@ -1057,9 +1100,23 @@ app.post('/api/libraries/:folderName/positions', async (req, res) => {
     }
 
     const positionsPath = path.join(folderPath, 'positions.json');
-    fs.writeFileSync(positionsPath, JSON.stringify(textPositionsMap || {}, null, 2), 'utf-8');
+    if (!creatorEmail && fs.existsSync(positionsPath)) {
+      try {
+        const rawJson = fs.readFileSync(positionsPath, 'utf-8');
+        const parsed = JSON.parse(rawJson);
+        if (parsed?.creator && typeof parsed.creator === 'string') {
+          creatorEmail = parsed.creator.trim().toLowerCase();
+        }
+      } catch (e) {}
+    }
 
-    await pushToGitHubRepo(`${folderName}/positions.json`, JSON.stringify(textPositionsMap || {}, null, 2), `Update positions for ${folderName}`);
+    const jsonContent = creatorEmail
+      ? { creator: creatorEmail, ...textPositionsMap }
+      : (textPositionsMap || {});
+
+    fs.writeFileSync(positionsPath, JSON.stringify(jsonContent, null, 2), 'utf-8');
+
+    await pushToGitHubRepo(`${folderName}/positions.json`, JSON.stringify(jsonContent, null, 2), `Update positions for ${folderName}`);
 
     res.json({ success: true });
   } catch (err: any) {
@@ -1115,6 +1172,7 @@ app.post('/api/rooms/create', (req, res) => {
       currentRound: 1,
       players: { [playerId]: hostPlayer },
       submissions: {},
+      allSubmissions: {},
       votes: {},
       roundStartTime: null,
       currentShowcaseIndex: 0,
@@ -1266,16 +1324,25 @@ app.post('/api/rooms/:code/settings', (req, res) => {
 app.post('/api/rooms/:code/start', (req, res) => {
   try {
     const { code } = req.params;
-    const { playerId } = req.body;
+    const { playerId, userEmail, isDeveloper } = req.body || {};
     const room = rooms[code];
 
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
     room.lastActivity = Date.now();
     if (room.hostId !== playerId) return res.status(403).json({ success: false, message: 'Only host can start game' });
 
+    const isCreatorAccount = Boolean(
+      isDeveloper ||
+      (userEmail && typeof userEmail === 'string' && userEmail.trim().length > 0)
+    );
+    const minPlayers = isCreatorAccount ? 1 : 2;
+
     const connectedCount = Object.values(room.players).filter(p => p.isConnected).length;
-    if (connectedCount < 2) {
-      return res.status(400).json({ success: false, message: 'At least 2 players are required to start the game' });
+    if (connectedCount < minPlayers) {
+      return res.status(400).json({
+        success: false,
+        message: `At least ${minPlayers} player(s) required to start the game.`
+      });
     }
 
     room.currentRound = 1;
@@ -1314,10 +1381,15 @@ app.post('/api/rooms/:code/submit-meme', (req, res) => {
       templateId,
       templateName,
       imageDataUrl,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      round: room.currentRound
     };
 
     room.submissions[submissionId] = submission;
+    if (!room.allSubmissions) {
+      room.allSubmissions = {};
+    }
+    room.allSubmissions[submissionId] = submission;
 
     // Check if all active players submitted
     const activePlayers = Object.values(room.players).filter(p => p.isConnected);
@@ -1414,6 +1486,7 @@ app.post('/api/rooms/:code/restart', (req, res) => {
     room.phaseStartTime = Date.now();
     room.currentRound = 1;
     room.submissions = {};
+    room.allSubmissions = {};
     room.votes = {};
     room.roundScores = {};
     Object.values(room.players).forEach(p => p.score = 0);

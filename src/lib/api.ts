@@ -95,11 +95,16 @@ export async function apiUpdateSettings(roomCode: string, playerId: string, sett
 }
 
 // 5. Start Game
-export async function apiStartGame(roomCode: string, playerId: string): Promise<GenericRoomResponse> {
+export async function apiStartGame(
+  roomCode: string,
+  playerId: string,
+  userEmail?: string,
+  isDeveloper?: boolean
+): Promise<GenericRoomResponse> {
   const res = await fetch(`${getApiBaseUrl()}/api/rooms/${roomCode}/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ playerId })
+    body: JSON.stringify({ playerId, userEmail, isDeveloper })
   });
   const data = await res.json();
   if (!res.ok || !data.success) {

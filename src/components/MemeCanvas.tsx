@@ -61,8 +61,16 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
     }
   ]);
 
+  const lastLoadedTemplateKeyRef = useRef<string>('');
+
   // Load preset text positions when template changes
   useEffect(() => {
+    const templateKey = `${template.id || template.name}_${template.url}`;
+    if (lastLoadedTemplateKeyRef.current === templateKey) {
+      return;
+    }
+    lastLoadedTemplateKeyRef.current = templateKey;
+
     if (template.textPositions && template.textPositions.length > 0) {
       const elements: TextElement[] = template.textPositions.map((pos, idx) => ({
         id: pos.id || `text-${idx + 1}`,
@@ -114,7 +122,7 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
       setTextElements(defaults);
       setSelectedId('text-1');
     }
-  }, [template.id, template.url, template.textPositions]);
+  }, [template.id, template.name, template.url, template.textPositions]);
 
   const [selectedId, setSelectedId] = useState<string>('text-1');
   const [draggingId, setDraggingId] = useState<string | null>(null);

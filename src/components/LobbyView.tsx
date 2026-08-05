@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Copy, Check, Users, Play, Crown, Upload, Clock, Layers, Sparkles, Share2 } from 'lucide-react';
-import { GameSettings, MemeTemplate, Player, Room } from '../types';
+import { GameSettings, MemeTemplate, Player, Room, UserAccount } from '../types';
 import { Translations } from '../i18n';
 import { compressImageDataUrl } from '../utils/imageCompressor';
 
 interface LobbyViewProps {
   room: Room;
   currentPlayer: Player;
+  currentUser?: UserAccount | null;
   onStartGame: () => void;
   onUpdateSettings: (settings: GameSettings) => void;
   t: Translations;
@@ -15,6 +16,7 @@ interface LobbyViewProps {
 export const LobbyView: React.FC<LobbyViewProps> = ({
   room,
   currentPlayer,
+  currentUser,
   onStartGame,
   onUpdateSettings,
   t
@@ -23,7 +25,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   const [linkCopied, setLinkCopied] = useState(false);
   const playersList = Object.values(room.players) as Player[];
   const connectedPlayersCount = playersList.filter(p => p.isConnected).length;
-  const canStart = connectedPlayersCount >= 2;
+  
+  const isCreatorAccount = Boolean(
+    currentUser && (currentUser.isDeveloper || currentUser.email)
+  );
+  const minPlayers = isCreatorAccount ? 1 : 2;
+  const canStart = connectedPlayersCount >= minPlayers;
   const isHost = currentPlayer.isHost;
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/${room.code}` : '';
@@ -311,6 +318,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 {!canStart && (
                   <div className="text-center text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
                     <span>{t.needMorePlayers}</span>
+                  </div>
+                )}
+                {canStart && connectedPlayersCount === 1 && isCreatorAccount && (
+                  <div className="text-center text-xs font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 rtl:space-x-reverse">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Creator Account: 1-Player Game Ready</span>
                   </div>
                 )}
                 <button

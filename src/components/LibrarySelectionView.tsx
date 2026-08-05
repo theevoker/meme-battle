@@ -59,12 +59,25 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
     libraryId: string;
   } | null>(null);
 
+  const getUserEmail = (): string => {
+    try {
+      const saved = localStorage.getItem('mb_user_account');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) return parsed.email.trim().toLowerCase();
+      }
+    } catch (e) {}
+    return 'itai.vacht@gmail.com'; // Default developer creator fallback if not logged in
+  };
+
   // Fetch libraries from backend / GitHub
   const fetchLibraries = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetch(`${serverUrl}/api/libraries`);
+      const userEmail = getUserEmail();
+      const queryParam = userEmail ? `?userEmail=${encodeURIComponent(userEmail)}` : '';
+      const res = await fetch(`${serverUrl}/api/libraries${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.libraries)) {
@@ -185,7 +198,8 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
 
     try {
       setIsProcessingUpload(true);
-      // Post to backend to save folder, status.txt = 0, and default positions.json
+      const userEmail = getUserEmail();
+      // Post to backend to save folder, status.txt = 0, default positions.json with creator email
       const res = await fetch(`${serverUrl}/api/libraries/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -194,7 +208,8 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
           folderName,
           images: templates,
           textPositionsMap: defaultPositionsMap,
-          status: 0 // Starts at 0 as requested
+          status: 0, // Starts at 0 as requested
+          creator: userEmail
         })
       });
 
@@ -206,7 +221,8 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
           displayName,
           status: 0,
           images: templates,
-          textPositionsMap: defaultPositionsMap
+          textPositionsMap: defaultPositionsMap,
+          creator: userEmail
         };
 
         // Close upload form modal
@@ -238,10 +254,14 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
     if (!activeEditingLibrary) return;
 
     try {
+      const userEmail = getUserEmail();
       await fetch(`${serverUrl}/api/libraries/${encodeURIComponent(activeEditingLibrary.folderName)}/positions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ textPositionsMap: positionsMap })
+        body: JSON.stringify({
+          textPositionsMap: positionsMap,
+          creator: userEmail
+        })
       });
       await fetchLibraries();
     } catch (err) {
@@ -340,6 +360,11 @@ export const LibrarySelectionView: React.FC<LibrarySelectionViewProps> = ({
                         {lib.isBuiltIn && (
                           <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-mono">
                             Built-in
+                          </span>
+                        )}
+                        {lib.status === 0 && (
+                          <span className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.2 rounded font-mono">
+                            Pending (Creator Access)
                           </span>
                         )}
                       </h4>

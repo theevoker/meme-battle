@@ -51,6 +51,7 @@ export interface PhotoLibrary {
   images: MemeTemplate[];
   textPositionsMap?: ImageTextPositionsMap;
   isBuiltIn?: boolean;
+  creator?: string; // Creator's email address
 }
 
 export interface TextElement {
@@ -76,6 +77,7 @@ export interface MemeSubmission {
   templateName: string;
   imageDataUrl: string;
   createdAt: number;
+  round?: number;
 }
 
 export interface Vote {
@@ -106,7 +108,8 @@ export interface Room {
   state: GameState;
   currentRound: number;
   players: Record<string, Player>;
-  submissions: Record<string, MemeSubmission>; // submissionId -> submission
+  submissions: Record<string, MemeSubmission>; // submissionId -> submission (current round)
+  allSubmissions?: Record<string, MemeSubmission>; // submissionId -> submission (accumulated all rounds)
   votes: Record<string, Record<string, Vote>>; // round -> submissionId:voterId -> Vote
   roundStartTime: number | null;
   currentShowcaseIndex: number;

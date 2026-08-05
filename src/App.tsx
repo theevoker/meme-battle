@@ -12,6 +12,7 @@ import { PhaseLoadingView } from './components/PhaseLoadingView';
 import { AuthModal } from './components/AuthModal';
 import { DeveloperJsonModal } from './components/DeveloperJsonModal';
 import { Language, getTranslations } from './i18n';
+import { isAiStudioEnvironment } from './utils/envUtils';
 import {
   apiCreateRoom,
   apiJoinRoom,
@@ -41,12 +42,40 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isDevJsonModalOpen, setIsDevJsonModalOpen] = useState(false);
 
-  // Load account from localStorage if present
+  // Load account from localStorage if present, or auto-login in AI Studio developer mode
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    const isStudio = isAiStudioEnvironment();
+    const devAccount: UserAccount = {
+      id: 'usr_dev_aistudio',
+      email: 'itai.vacht@gmail.com',
+      name: 'Itai Vacht (Dev)',
+      avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=itai.vacht@gmail.com',
+      provider: 'google',
+      isDeveloper: true,
+      createdAt: new Date().toISOString()
+    };
+
     try {
       const saved = localStorage.getItem('mb_user_account');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: UserAccount = JSON.parse(saved);
+        if (isStudio) {
+          const updated = { ...parsed, isDeveloper: true };
+          localStorage.setItem('mb_user_account', JSON.stringify(updated));
+          return updated;
+        }
+        return parsed;
+      }
     } catch (e) {}
+
+    // When entering through AI Studio, default to Developer Account
+    if (isStudio) {
+      try {
+        localStorage.setItem('mb_user_account', JSON.stringify(devAccount));
+      } catch (e) {}
+      return devAccount;
+    }
+
     return null;
   });
 
@@ -236,7 +265,12 @@ export default function App() {
   const handleStartGame = async () => {
     if (!room || !myPlayerId) return;
     try {
-      const data = await apiStartGame(room.code, myPlayerId);
+      const data = await apiStartGame(
+        room.code,
+        myPlayerId,
+        currentUser?.email,
+        Boolean(currentUser?.isDeveloper)
+      );
       if (data.room) setRoom(data.room);
     } catch (err: any) {
       showError(err.message);
@@ -371,6 +405,7 @@ export default function App() {
           <LobbyView
             room={room}
             currentPlayer={currentPlayer}
+            currentUser={currentUser}
             onStartGame={handleStartGame}
             onUpdateSettings={handleUpdateSettings}
             t={t}

@@ -183,7 +183,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
                     <span className="text-lg font-black text-cyan-400">{roundDuration}s</span>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {[15, 30, 45, 60, 90, 120].map((dur) => (
+                    {[30, 45, 60, 90, 120, 150].map((dur) => (
                       <button
                         key={dur}
                         type="button"
@@ -309,15 +309,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
                 <span>Vote on opponents' memes: <strong>Like (+200 pts)</strong>, <strong>Meh (0 pts)</strong>, <strong>Dislike (-200 pts)</strong>.</span>
               </li>
             </ul>
-          </div>
-
-          {/* Card 3: Live Stats Banner */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-medium text-slate-300">Live Socket Sync Active</span>
-            </div>
-            <span className="font-mono text-indigo-400 font-bold">PORT 3000</span>
           </div>
 
         </div>
