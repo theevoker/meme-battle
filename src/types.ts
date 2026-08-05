@@ -3,7 +3,7 @@ export interface UserAccount {
   email: string;
   name: string;
   avatarUrl?: string;
-  provider: 'email' | 'google';
+  provider: 'google';
   isDeveloper: boolean;
   createdAt: string;
 }

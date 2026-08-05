@@ -3,6 +3,7 @@ import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GameSettings, MemeSubmission, Player, Room, Vote, PhotoLibrary, MemeTemplate, ImageTextPositionsMap } from './src/types';
 import { CLASSIC_MEME_TEMPLATES } from './src/data/templates';
@@ -72,10 +73,10 @@ interface StoredUser {
   id: string;
   email: string;
   name: string;
-  passwordHash?: string;
   avatarUrl?: string;
-  provider: 'email' | 'google';
+  provider: 'google';
   isDeveloper: boolean;
+  isVerified?: boolean;
   createdAt: string;
 }
 
@@ -617,90 +618,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// --- ACCOUNTS & AUTH API ENDPOINTS (Stored in server database) ---
-
-// POST /api/auth/register - Register a new user account
-app.post('/api/auth/register', (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-    if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const displayName = (name || cleanEmail.split('@')[0]).trim();
-    const users = loadUsers();
-    const isDeveloper = cleanEmail === 'itai.vacht@gmail.com';
-
-    let user = Object.values(users).find((u) => u.email.toLowerCase() === cleanEmail);
-
-    if (user) {
-      user.name = displayName || user.name;
-      user.isDeveloper = isDeveloper;
-      users[user.id] = user;
-      saveUsers(users);
-      return res.json({ success: true, user, message: 'Logged into existing account' });
-    }
-
-    const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    user = {
-      id: userId,
-      email: cleanEmail,
-      name: displayName,
-      passwordHash: password || '',
-      provider: 'email',
-      isDeveloper,
-      createdAt: new Date().toISOString()
-    };
-
-    users[userId] = user;
-    saveUsers(users);
-
-    res.json({ success: true, user });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// POST /api/auth/login - Login with Email & Password
-app.post('/api/auth/login', (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const users = loadUsers();
-    const isDeveloper = cleanEmail === 'itai.vacht@gmail.com';
-
-    let user = Object.values(users).find((u) => u.email.toLowerCase() === cleanEmail);
-
-    if (!user) {
-      // Auto-register for seamless onboarding
-      const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      user = {
-        id: userId,
-        email: cleanEmail,
-        name: cleanEmail.split('@')[0],
-        passwordHash: password || '',
-        provider: 'email',
-        isDeveloper,
-        createdAt: new Date().toISOString()
-      };
-      users[userId] = user;
-      saveUsers(users);
-    } else {
-      user.isDeveloper = isDeveloper;
-      users[user.id] = user;
-      saveUsers(users);
-    }
-
-    res.json({ success: true, user });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// --- ACCOUNTS & AUTH API ENDPOINTS (Google OAuth) ---
 
 // GET /api/auth/google/url - Constructs Google OAuth 2.0 Authorization URL
 app.get('/api/auth/google/url', (req, res) => {
@@ -807,6 +725,7 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       user.avatarUrl = avatarUrl;
       user.provider = 'google';
       user.isDeveloper = isDeveloper;
+      user.isVerified = true;
       users[user.id] = user;
       saveUsers(users);
     } else {
@@ -818,6 +737,7 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
         avatarUrl,
         provider: 'google',
         isDeveloper,
+        isVerified: true,
         createdAt: new Date().toISOString()
       };
       users[userId] = user;
@@ -902,6 +822,7 @@ app.post('/api/auth/google', (req, res) => {
       if (avatarUrl) user.avatarUrl = avatarUrl;
       user.provider = 'google';
       user.isDeveloper = isDeveloper;
+      user.isVerified = true;
       users[user.id] = user;
       saveUsers(users);
     } else {
@@ -913,6 +834,7 @@ app.post('/api/auth/google', (req, res) => {
         avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanEmail}`,
         provider: 'google',
         isDeveloper,
+        isVerified: true,
         createdAt: new Date().toISOString()
       };
       users[userId] = user;

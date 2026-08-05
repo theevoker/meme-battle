@@ -45,50 +45,54 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
 
   // Active positions for current image
   const currentKey = activeImage ? activeImage.name || activeImage.id : '';
-  const currentPositions = positionsMap[currentKey] || [
-    {
-      id: 'text-1',
-      text: 'TOP TEXT',
-      x: 50,
-      y: 15,
-      fontSize: 36,
-      color: '#FFFFFF',
-      strokeColor: '#000000',
-      strokeWidth: 5,
-      fontFamily: 'Impact, sans-serif',
-      isUppercase: true,
-      align: 'center'
-    },
-    {
-      id: 'text-2',
-      text: 'BOTTOM TEXT',
-      x: 50,
-      y: 85,
-      fontSize: 36,
-      color: '#FFFFFF',
-      strokeColor: '#000000',
-      strokeWidth: 5,
-      fontFamily: 'Impact, sans-serif',
-      isUppercase: true,
-      align: 'center'
-    }
-  ];
+  const currentPositions =
+    positionsMap[currentKey] ||
+    (activeImage?.name ? positionsMap[activeImage.name] : undefined) ||
+    (activeImage?.id ? positionsMap[activeImage.id] : undefined) || [
+      {
+        id: 'text-1',
+        text: 'TOP TEXT',
+        x: 50,
+        y: 15,
+        fontSize: 36,
+        color: '#FFFFFF',
+        strokeColor: '#000000',
+        strokeWidth: 5,
+        fontFamily: 'Impact, sans-serif',
+        isUppercase: true,
+        align: 'center'
+      },
+      {
+        id: 'text-2',
+        text: 'BOTTOM TEXT',
+        x: 50,
+        y: 85,
+        fontSize: 36,
+        color: '#FFFFFF',
+        strokeColor: '#000000',
+        strokeWidth: 5,
+        fontFamily: 'Impact, sans-serif',
+        isUppercase: true,
+        align: 'center'
+      }
+    ];
 
+  // Initialize positionsMap ONLY when modal opens or active image/library changes
   useEffect(() => {
-    if (initialPositionsMap && Object.keys(initialPositionsMap).length > 0) {
+    if (isOpen && initialPositionsMap && Object.keys(initialPositionsMap).length > 0) {
       setPositionsMap(initialPositionsMap);
     }
-  }, [initialPositionsMap]);
+  }, [isOpen, folderName]);
 
   // Sync active image's default positions if not set
   useEffect(() => {
-    if (activeImage && !positionsMap[activeImage.name]) {
+    if (activeImage && currentKey && !positionsMap[currentKey]) {
       setPositionsMap((prev) => ({
         ...prev,
-        [activeImage.name]: currentPositions
+        [currentKey]: currentPositions
       }));
     }
-  }, [currentIdx, activeImage]);
+  }, [currentIdx, activeImage, currentKey]);
 
   // Active selected text config
   const selectedText = currentPositions.find((t) => t.id === selectedTextId) || currentPositions[0];
@@ -154,10 +158,12 @@ export const LibraryPositionEditorModal: React.FC<LibraryPositionEditorModalProp
   if (!isOpen) return null;
 
   const updateCurrentPositions = (newPositions: TextPositionConfig[]) => {
-    if (!activeImage) return;
+    if (!activeImage || !currentKey) return;
     setPositionsMap((prev) => ({
       ...prev,
-      [activeImage.name]: newPositions
+      [currentKey]: newPositions,
+      ...(activeImage.name ? { [activeImage.name]: newPositions } : {}),
+      ...(activeImage.id ? { [activeImage.id]: newPositions } : {})
     }));
   };
 
