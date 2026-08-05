@@ -9,6 +9,30 @@ import { CLASSIC_MEME_TEMPLATES } from './src/data/templates';
 
 const app = express();
 
+// Trust reverse proxies (Cloud Run, Cloudflare, custom domain SSL terminators)
+app.set('trust proxy', true);
+
+// Helper to determine the canonical redirect URI for Google OAuth
+function getCanonicalRedirectUri(req: express.Request): string {
+  if (req.query.redirect_uri && typeof req.query.redirect_uri === 'string') {
+    return req.query.redirect_uri;
+  }
+  
+  const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || 'localhost:3000';
+  const cleanHost = Array.isArray(host) ? host[0] : host.split(',')[0].trim();
+  
+  const protoHeader = req.headers['x-forwarded-proto'];
+  let proto = protoHeader
+    ? (Array.isArray(protoHeader) ? protoHeader[0] : protoHeader.split(',')[0].trim())
+    : (req.secure || req.protocol === 'https' ? 'https' : 'http');
+    
+  if (!cleanHost.includes('localhost') && !cleanHost.includes('127.0.0.1')) {
+    proto = 'https';
+  }
+  
+  return `${proto}://${cleanHost}/auth/google/callback`;
+}
+
 // Enable CORS for all origins (Capacitor webviews, mobile apps, cross-domain connections)
 app.use(cors({
   origin: '*',
@@ -685,44 +709,59 @@ app.get('/api/auth/google/url', (req, res) => {
     return res.json({
       success: false,
       configured: false,
-      message: 'GOOGLE_CLIENT_ID environment variable is not set.'
+      message: 'GOOGLE_CLIENT_ID environment variable is not set on server.'
     });
   }
 
-  const redirectUri = (req.query.redirect_uri as string) || `${process.env.APP_URL || 'http://localhost:3000'}/auth/google/callback`;
+  const redirectUri = getCanonicalRedirectUri(req);
   const params = new URLSearchParams({
     client_id: clientId.trim(),
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     prompt: 'select_account',
-    access_type: 'offline'
+    access_type: 'offline',
+    state: encodeURIComponent(redirectUri)
   });
 
   const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  res.json({ success: true, configured: true, url });
+  res.json({ success: true, configured: true, url, redirectUri });
 });
 
 // GET /auth/google/callback & /auth/google/callback/ - OAuth Callback Handler
 const handleGoogleCallback = async (req: express.Request, res: express.Response) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
 
   if (error || !code) {
     return res.send(`
+      <!DOCTYPE html>
       <html>
-        <body style="background:#0f172a;color:#ef4444;font-family:sans-serif;padding:2rem;">
-          <h2>Google OAuth Error</h2>
-          <p>${error || 'No authorization code provided'}</p>
-          <script>setTimeout(() => window.close(), 3000);</script>
+        <head>
+          <title>Google Authentication Error</title>
+          <style>
+            body { background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #ef4444; max-width: 480px; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h3 style="color:#ef4444;margin-top:0;">Google OAuth Error</h3>
+            <p style="color:#cbd5e1;">${error || 'No authorization code provided by Google.'}</p>
+          </div>
         </body>
       </html>
     `);
   }
 
+  const redirectUri = state ? decodeURIComponent(state as string) : getCanonicalRedirectUri(req);
+
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
-    const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
+    const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+
+    if (!clientId || !clientSecret) {
+      throw new Error(`Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET in server environment variables. Please set them in server config.`);
+    }
 
     // Exchange code for tokens
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -739,7 +778,10 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
-      throw new Error(tokenData.error_description || tokenData.error || 'Failed to exchange token');
+      console.error('Google token exchange failed:', tokenData);
+      throw new Error(
+        `Token Exchange Error: ${tokenData.error_description || tokenData.error || 'Failed to exchange code with Google.'}\nRedirect URI used: ${redirectUri}`
+      );
     }
 
     // Fetch Google User Profile
@@ -749,7 +791,7 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
 
     const profile = await profileRes.json();
     if (!profileRes.ok || !profile.email) {
-      throw new Error('Failed to fetch Google profile information');
+      throw new Error('Failed to fetch Google user profile information');
     }
 
     const cleanEmail = profile.email.trim().toLowerCase();
@@ -786,16 +828,16 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Google Authentication</title>
+          <title>Google Authentication Successful</title>
           <style>
             body { background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-            .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #334155; }
+            .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #38bdf8; max-width: 480px; }
           </style>
         </head>
         <body>
           <div class="card">
             <h3 style="color:#38bdf8;margin-top:0;">Authentication Successful!</h3>
-            <p style="color:#94a3b8;">Welcome, ${user.name}! Closing window...</p>
+            <p style="color:#94a3b8;">Logged in as <strong>${user.name}</strong> (${user.email}). Closing window...</p>
           </div>
           <script>
             if (window.opener) {
@@ -810,11 +852,28 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
     `);
   } catch (err: any) {
     return res.send(`
+      <!DOCTYPE html>
       <html>
-        <body style="background:#0f172a;color:#ef4444;font-family:sans-serif;padding:2rem;">
-          <h2>Google Authentication Exception</h2>
-          <p>${err.message}</p>
-          <script>setTimeout(() => window.close(), 4000);</script>
+        <head>
+          <title>Google Authentication Error</title>
+          <style>
+            body { background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #1e293b; padding: 2rem; border-radius: 1rem; text-align: left; border: 1px solid #ef4444; max-width: 550px; line-height: 1.5; }
+            code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.85rem; color: #38bdf8; word-break: break-all; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h3 style="color:#ef4444;margin-top:0;">Authentication Error</h3>
+            <p style="color:#cbd5e1;white-space:pre-wrap;">${err.message}</p>
+            <div style="margin-top:1rem;padding-top:1rem;border-t:1px solid #334155;font-size:0.8rem;color:#94a3b8;">
+              <p><strong>Config Checklist for Custom Domain:</strong></p>
+              <ul>
+                <li>Ensure <code>${redirectUri}</code> is registered under <strong>Authorized redirect URIs</strong> in Google Cloud Console.</li>
+                <li>Verify <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> environment variables.</li>
+              </ul>
+            </div>
+          </div>
         </body>
       </html>
     `);
