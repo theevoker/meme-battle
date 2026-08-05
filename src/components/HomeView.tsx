@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Play, PlusCircle, Users, Upload, Sparkles, Clock, Layers, ShieldCheck, Flame, FileArchive, Check } from 'lucide-react';
-import JSZip from 'jszip';
-import { GameSettings, MemeTemplate } from '../types';
+import { Play, PlusCircle, Users, Sparkles, Clock, Layers, Flame } from 'lucide-react';
+import { GameSettings, MemeTemplate, PhotoLibrary } from '../types';
 import { Translations } from '../i18n';
-import { compressImageDataUrl } from '../utils/imageCompressor';
+import { LibrarySelectionView } from './LibrarySelectionView';
 
 interface HomeViewProps {
   onCreateRoom: (hostName: string, settings: GameSettings) => void;
@@ -30,132 +29,50 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
   // Create Settings
   const [totalRounds, setTotalRounds] = useState(3);
   const [roundDuration, setRoundDuration] = useState(45);
-  const [customTemplates, setCustomTemplates] = useState<MemeTemplate[]>([]);
-  const [useOnlyCustomTemplates, setUseOnlyCustomTemplates] = useState(false);
-  const [isExtractingZip, setIsExtractingZip] = useState(false);
+  const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>(['classic_memes']);
+  const [allLibraries, setAllLibraries] = useState<PhotoLibrary[]>([]);
 
-  // Handle single/multiple image uploads
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const fileList = Array.from(files) as File[];
-    let processed = 0;
-    const addedTemplates: MemeTemplate[] = [];
-
-    const checkDone = () => {
-      processed++;
-      if (processed === fileList.length && addedTemplates.length > 0) {
-        setCustomTemplates((prev) => [...prev, ...addedTemplates]);
-      }
-    };
-
-    fileList.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        checkDone();
-        return;
-      }
-      try {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-          try {
-            if (event.target?.result) {
-              const rawUrl = event.target.result as string;
-              const compressedUrl = await compressImageDataUrl(rawUrl);
-              addedTemplates.push({
-                id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-                name: file.name.replace(/\.[^/.]+$/, ''),
-                url: compressedUrl,
-                isCustom: true
-              });
-            }
-          } catch (err) {
-            console.warn('Skipping problematic image file:', file.name, err);
-          } finally {
-            checkDone();
-          }
-        };
-        reader.onerror = () => {
-          console.warn('FileReader error for file:', file.name);
-          checkDone();
-        };
-        reader.readAsDataURL(file);
-      } catch (err) {
-        console.warn('Failed to read file:', file.name, err);
-        checkDone();
+  const handleToggleLibrary = (libraryId: string) => {
+    setSelectedLibraryIds((prev) => {
+      if (prev.includes(libraryId)) {
+        if (prev.length === 1) return prev; // At least one library must be selected
+        return prev.filter((id) => id !== libraryId);
+      } else {
+        return [...prev, libraryId];
       }
     });
-    e.target.value = '';
-  };
-
-  // Handle ZIP Template Pack upload & extraction
-  const handleZipFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsExtractingZip(true);
-      const zip = new JSZip();
-      const zipContent = await zip.loadAsync(file);
-      const extractedTemplates: MemeTemplate[] = [];
-
-      const fileEntries = Object.keys(zipContent.files);
-      for (const filename of fileEntries) {
-        try {
-          const entry = zipContent.files[filename];
-          if (entry.dir) continue;
-          const lower = filename.toLowerCase();
-          if (
-            lower.endsWith('.png') ||
-            lower.endsWith('.jpg') ||
-            lower.endsWith('.jpeg') ||
-            lower.endsWith('.webp') ||
-            lower.endsWith('.gif')
-          ) {
-            const blob = await entry.async('blob');
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = (ev) => resolve(ev.target?.result as string);
-              reader.onerror = (err) => reject(err);
-              reader.readAsDataURL(blob);
-            });
-            const compressedUrl = await compressImageDataUrl(base64);
-            const cleanName = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'Template';
-            extractedTemplates.push({
-              id: `zip_tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-              name: cleanName,
-              url: compressedUrl,
-              isCustom: true
-            });
-          }
-        } catch (fileErr) {
-          console.warn(`Skipping corrupted or unreadable image in zip (${filename}):`, fileErr);
-        }
-      }
-
-      if (extractedTemplates.length > 0) {
-        setCustomTemplates((prev) => [...prev, ...extractedTemplates]);
-        setUseOnlyCustomTemplates(true); // Automatically toggle exclusive ZIP mode
-      }
-    } catch (err) {
-      console.error('Failed to extract ZIP templates:', err);
-    } finally {
-      setIsExtractingZip(false);
-    }
-  };
-
-  const removeCustomTemplate = (id: string) => {
-    setCustomTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const finalName = playerName.trim() || 'Meme Master';
+
+    // Collect all templates from selected photo libraries
+    const selectedLibs = allLibraries.filter(
+      (lib) => selectedLibraryIds.includes(lib.id) || selectedLibraryIds.includes(lib.folderName)
+    );
+
+    const aggregatedTemplates: MemeTemplate[] = [];
+    selectedLibs.forEach((lib) => {
+      if (lib.images && Array.isArray(lib.images)) {
+        lib.images.forEach((img) => {
+          // Attach library text positions if present
+          const pos = lib.textPositionsMap?.[img.name] || lib.textPositionsMap?.[img.id] || img.textPositions;
+          aggregatedTemplates.push({
+            ...img,
+            libraryId: lib.id,
+            textPositions: pos || img.textPositions
+          });
+        });
+      }
+    });
+
     onCreateRoom(finalName, {
       totalRounds,
       roundDuration,
-      customTemplates,
-      useOnlyCustomTemplates
+      selectedLibraryIds,
+      customTemplates: aggregatedTemplates,
+      useOnlyCustomTemplates: !selectedLibraryIds.includes('classic_memes')
     });
   };
 
@@ -284,91 +201,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onCreateRoom, onJoinRoom, er
                 </div>
               </div>
 
-              {/* Upload Custom Meme Templates / ZIP Pack */}
-              <div className="bg-slate-950/50 border border-slate-800 p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 flex items-center space-x-1.5 rtl:space-x-reverse">
-                    <FileArchive className="w-4 h-4 text-purple-400" />
-                    <span>{t.customTemplatePack}</span>
-                  </label>
-                  <span className="text-[10px] font-bold text-indigo-400">
-                    {customTemplates.length} {t.zipTemplatesCount}
-                  </span>
-                </div>
-
-                {/* ZIP Upload Prompt */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-xl py-3 px-3 text-center cursor-pointer bg-purple-950/20 hover:bg-purple-900/30 transition-all flex items-center justify-center space-x-2 rtl:space-x-reverse min-h-[44px]">
-                    <FileArchive className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                    <span className="text-xs font-bold text-purple-300">
-                      {isExtractingZip ? t.uploadingZip : t.uploadZipPack}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".zip,application/zip,application/x-zip-compressed"
-                      onChange={handleZipFileUpload}
-                      className="hidden"
-                      disabled={isExtractingZip}
-                    />
-                  </label>
-
-                  {/* Individual Images Upload */}
-                  <label className="border-2 border-dashed border-slate-700 hover:border-slate-500 rounded-xl py-3 px-3 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900 transition-all flex items-center justify-center space-x-2 rtl:space-x-reverse min-h-[44px]">
-                    <Upload className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    <span className="text-xs font-semibold text-slate-300">
-                      Upload Images
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* Use Exclusively ZIP Templates Checkbox */}
-                {customTemplates.length > 0 && (
-                  <div className="pt-2 flex items-center space-x-2.5 rtl:space-x-reverse">
-                    <button
-                      type="button"
-                      onClick={() => setUseOnlyCustomTemplates((prev) => !prev)}
-                      className={`w-5 h-5 rounded border flex items-center justify-center transition-all cursor-pointer ${
-                        useOnlyCustomTemplates
-                          ? 'bg-purple-600 border-purple-400 text-white'
-                          : 'bg-slate-900 border-slate-700 text-transparent'
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs font-bold text-purple-300">
-                      {t.useOnlyCustomTemplates}
-                    </span>
-                  </div>
-                )}
-
-                {/* Previews of uploaded custom templates */}
-                {customTemplates.length > 0 && (
-                  <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin pt-2">
-                    {customTemplates.map((tmpl) => (
-                      <div key={tmpl.id} className="relative group flex-shrink-0">
-                        <img
-                          src={tmpl.url}
-                          alt={tmpl.name}
-                          className="w-14 h-14 object-cover rounded-lg border border-purple-500/50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeCustomTemplate(tmpl.id)}
-                          className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center shadow opacity-90 group-hover:opacity-100 cursor-pointer"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* Photo Library Chooser Tab / Selector */}
+              <div className="bg-slate-950/50 border border-slate-800 p-4 rounded-xl">
+                <LibrarySelectionView
+                  selectedLibraryIds={selectedLibraryIds}
+                  onToggleLibrary={handleToggleLibrary}
+                  onLibrariesUpdated={(libs) => setAllLibraries(libs)}
+                />
               </div>
 
               {/* Create Submit Button */}

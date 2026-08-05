@@ -1,3 +1,13 @@
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  provider: 'email' | 'google';
+  isDeveloper: boolean;
+  createdAt: string;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -8,11 +18,39 @@ export interface Player {
   lastSeen?: number;
 }
 
+export interface TextPositionConfig {
+  id: string;
+  text?: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  fontSize: number;
+  color: string;
+  strokeColor: string;
+  strokeWidth: number;
+  fontFamily: string;
+  isUppercase: boolean;
+  align: 'left' | 'center' | 'right';
+}
+
+export type ImageTextPositionsMap = Record<string, TextPositionConfig[]>;
+
 export interface MemeTemplate {
   id: string;
   name: string;
   url: string;
   isCustom?: boolean;
+  libraryId?: string;
+  textPositions?: TextPositionConfig[];
+}
+
+export interface PhotoLibrary {
+  id: string;
+  folderName: string; // e.g. "Dank_Memes:847192"
+  displayName: string;
+  status: number; // 0 = pending/hidden, 5 = approved & active
+  images: MemeTemplate[];
+  textPositionsMap?: ImageTextPositionsMap;
+  isBuiltIn?: boolean;
 }
 
 export interface TextElement {
@@ -49,6 +87,7 @@ export interface Vote {
 export interface GameSettings {
   totalRounds: number;
   roundDuration: number; // in seconds
+  selectedLibraryIds?: string[];
   customTemplates: MemeTemplate[];
   useOnlyCustomTemplates?: boolean;
 }

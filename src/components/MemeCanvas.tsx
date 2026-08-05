@@ -61,6 +61,61 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
     }
   ]);
 
+  // Load preset text positions when template changes
+  useEffect(() => {
+    if (template.textPositions && template.textPositions.length > 0) {
+      const elements: TextElement[] = template.textPositions.map((pos, idx) => ({
+        id: pos.id || `text-${idx + 1}`,
+        text: pos.text || (idx === 0 ? 'TOP TEXT HERE' : 'BOTTOM TEXT HERE'),
+        x: pos.x,
+        y: pos.y,
+        fontSize: pos.fontSize || 36,
+        color: pos.color || '#FFFFFF',
+        strokeColor: pos.strokeColor || '#000000',
+        strokeWidth: pos.strokeWidth ?? 5,
+        fontFamily: pos.fontFamily || 'Impact, sans-serif',
+        isUppercase: pos.isUppercase !== undefined ? pos.isUppercase : true,
+        align: pos.align || 'center'
+      }));
+      setTextElements(elements);
+      if (elements[0]) {
+        setSelectedId(elements[0].id);
+      }
+    } else {
+      // Default top/bottom text
+      const defaults: TextElement[] = [
+        {
+          id: 'text-1',
+          text: 'TOP TEXT HERE',
+          x: 50,
+          y: 12,
+          fontSize: 36,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 5,
+          fontFamily: 'Impact, sans-serif',
+          isUppercase: true,
+          align: 'center'
+        },
+        {
+          id: 'text-2',
+          text: 'BOTTOM TEXT HERE',
+          x: 50,
+          y: 88,
+          fontSize: 36,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 5,
+          fontFamily: 'Impact, sans-serif',
+          isUppercase: true,
+          align: 'center'
+        }
+      ];
+      setTextElements(defaults);
+      setSelectedId('text-1');
+    }
+  }, [template.id, template.url, template.textPositions]);
+
   const [selectedId, setSelectedId] = useState<string>('text-1');
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -121,20 +176,8 @@ export const MemeCanvas = forwardRef<MemeCanvasRef, MemeCanvasProps>(({
           ctx.fillText(line, posX, currentY);
         });
 
-        // If selected element, draw subtle drag bounding outline (ONLY when NOT exporting)
-        if (!forExport && el.id === selectedId) {
-          ctx.save();
-          ctx.strokeStyle = '#38BDF8';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([6, 6]);
-
-          const metrics = ctx.measureText(textToDraw.split('\n')[0] || 'T');
-          const boxWidth = Math.max(metrics.width + 20, 80);
-          const boxHeight = totalHeight + 16;
-
-          ctx.strokeRect(posX - (boxWidth / 2), posY - (boxHeight / 2), boxWidth, boxHeight);
-          ctx.restore();
-        }
+        // Text outline rendering disabled per design requirement
+        /* No bounding box outline */
       });
     };
 

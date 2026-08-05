@@ -1,6 +1,6 @@
 import React from 'react';
-import { Trophy, Users, Copy, Check, LogOut, Globe, Flame } from 'lucide-react';
-import { Player, Room } from '../types';
+import { Trophy, Users, Copy, Check, LogOut, Globe, Flame, User, Code, LogIn } from 'lucide-react';
+import { Player, Room, UserAccount } from '../types';
 import { Language, Translations } from '../i18n';
 
 interface HeaderProps {
@@ -12,6 +12,10 @@ interface HeaderProps {
   t: Translations;
   socketConnected: boolean;
   onOpenServerSettings: () => void;
+  currentUser: UserAccount | null;
+  onOpenAuthModal: () => void;
+  onOpenDeveloperJsonModal: () => void;
+  onLogoutAccount: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,7 +24,11 @@ export const Header: React.FC<HeaderProps> = ({
   onLeaveRoom,
   lang,
   onLanguageChange,
-  t
+  t,
+  currentUser,
+  onOpenAuthModal,
+  onOpenDeveloperJsonModal,
+  onLogoutAccount
 }) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -31,12 +39,65 @@ export const Header: React.FC<HeaderProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isDev = currentUser && (currentUser.isDeveloper || currentUser.email.toLowerCase() === 'itai.vacht@gmail.com');
+
   return (
     <header className="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 py-2.5 px-3 sm:px-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
 
+        {/* Header Left / Brand or Developer Button */}
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          {/* Developer JSON Editor Button (Visible for itai.vacht@gmail.com) */}
+          {isDev && (
+            <button
+              type="button"
+              onClick={onOpenDeveloperJsonModal}
+              className="min-h-[36px] sm:min-h-[38px] px-2.5 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 font-extrabold text-xs flex items-center space-x-1.5 shadow transition-all cursor-pointer touch-manipulation active:scale-95"
+              title="Edit Built-in Library JSON file on Server"
+            >
+              <Code className="w-4 h-4 text-purple-400" />
+              <span className="hidden sm:inline">Edit Built-in JSON</span>
+              <span className="sm:hidden">JSON</span>
+            </button>
+          )}
+        </div>
+
         {/* Header Right Actions */}
         <div className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse">
+          {/* User Account Button */}
+          {currentUser ? (
+            <div className="flex items-center space-x-1.5 bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1 min-h-[36px] sm:min-h-[38px]">
+              <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-black text-white">
+                {currentUser.name.slice(0, 1).toUpperCase()}
+              </div>
+              <span className="text-xs font-bold text-white max-w-[100px] truncate">
+                {currentUser.name}
+              </span>
+              {isDev && (
+                <span className="text-[9px] bg-purple-500/30 text-purple-300 font-extrabold px-1.5 py-0.5 rounded uppercase">
+                  Dev
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={onLogoutAccount}
+                className="text-slate-400 hover:text-rose-400 text-[10px] ml-1 font-semibold underline cursor-pointer"
+                title="Sign Out"
+              >
+                Exit
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAuthModal}
+              className="min-h-[36px] sm:min-h-[38px] px-3 py-1 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow transition-all cursor-pointer touch-manipulation active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+          )}
+
           {/* Language Selector Toggle */}
           <button
             type="button"
@@ -51,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Room Info & Player Badge if in Room */}
           {room && currentPlayer && (
             <div className="flex items-center space-x-1 sm:space-x-2 rtl:space-x-reverse">
-              {/* Room Code Badge - Prominent on Top Right for all devices */}
+              {/* Room Code Badge */}
               <button
                 type="button"
                 onClick={copyCode}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { GameSettings, GameState, Player, Room } from './types';
+import { GameSettings, GameState, Player, Room, UserAccount } from './types';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
 import { LobbyView } from './components/LobbyView';
@@ -9,6 +9,8 @@ import { RoundResultsView } from './components/RoundResultsView';
 import { FinalLeaderboardView } from './components/FinalLeaderboardView';
 import { ServerSettingsModal } from './components/ServerSettingsModal';
 import { PhaseLoadingView } from './components/PhaseLoadingView';
+import { AuthModal } from './components/AuthModal';
+import { DeveloperJsonModal } from './components/DeveloperJsonModal';
 import { Language, getTranslations } from './i18n';
 import {
   apiCreateRoom,
@@ -36,6 +38,31 @@ const getInitialUrlRoomCode = (): string | null => {
 export default function App() {
   const [isConnected, setIsConnected] = useState(true);
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isDevJsonModalOpen, setIsDevJsonModalOpen] = useState(false);
+
+  // Load account from localStorage if present
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem('mb_user_account');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  const handleUserLoggedIn = (user: UserAccount) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('mb_user_account', JSON.stringify(user));
+    } catch (e) {}
+  };
+
+  const handleLogoutAccount = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('mb_user_account');
+    } catch (e) {}
+  };
   
   const [lang, setLang] = useState<Language>('en');
   const t = getTranslations(lang);
@@ -292,6 +319,10 @@ export default function App() {
         t={t}
         socketConnected={isConnected}
         onOpenServerSettings={() => setIsServerModalOpen(true)}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenDeveloperJsonModal={() => setIsDevJsonModalOpen(true)}
+        onLogoutAccount={handleLogoutAccount}
       />
 
       {/* Server Settings Modal for Capacitor / Custom server URL */}
@@ -301,6 +332,20 @@ export default function App() {
         isConnected={isConnected}
         onReconnect={pollActiveRoom}
         t={t}
+      />
+
+      {/* Account Authentication Modal (Email & Google) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onUserLoggedIn={handleUserLoggedIn}
+      />
+
+      {/* Developer Built-in JSON Editor Modal (itai.vacht@gmail.com) */}
+      <DeveloperJsonModal
+        isOpen={isDevJsonModalOpen}
+        onClose={() => setIsDevJsonModalOpen(false)}
+        currentUser={currentUser}
       />
 
       {/* Main Content Arena */}
