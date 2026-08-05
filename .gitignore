@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+.data/
+builtin_libraries.json
+text_positions.json
+positions.json
